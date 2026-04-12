@@ -2,6 +2,7 @@ package com.pm.authservice.controller;
 
 import com.pm.authservice.dto.LoginRequestDto;
 import com.pm.authservice.dto.LoginResponseDto;
+import com.pm.authservice.dto.UserDTO;
 import com.pm.authservice.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -52,6 +53,13 @@ public class AuthController {
         return authService.validate(token) ?
                 ResponseEntity.ok().body("Token is valid") :
                 ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token is invalid");
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<String> signUp(@Valid @RequestBody UserDTO userDTO) {
+        String response = authService.signUp(userDTO);
+
+        return ResponseEntity.ok().body(response + " created");
     }
 
     //add signup

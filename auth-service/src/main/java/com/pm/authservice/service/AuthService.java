@@ -1,6 +1,8 @@
 package com.pm.authservice.service;
 
 import com.pm.authservice.dto.LoginRequestDto;
+import com.pm.authservice.dto.UserDTO;
+import com.pm.authservice.exception.EmailAlreadyExistException;
 import com.pm.authservice.utils.JwtUtil;
 import io.jsonwebtoken.JwtException;
 import org.slf4j.Logger;
@@ -25,7 +27,7 @@ public class AuthService {
     }
 
     public Optional<String> authenticate(LoginRequestDto loginRequestDto) {
-        //add pre email check
+
         Optional<String> token = userSevice.findByEmail(loginRequestDto.getEmail())
                 .filter(user -> passwordEncoder.matches(loginRequestDto.getPassword(), user.getPassword()))
                 .map(user -> jwtUtil.generateToken(user.getEmail(), user.getRole()));
@@ -41,5 +43,13 @@ public class AuthService {
             log.error("Token validation failed: {}", e.getMessage());
             return false;
         }
+    }
+
+    public String signUp(UserDTO userDTO) {
+        if(userSevice.emailExist(userDTO.getEmail())){
+            throw new EmailAlreadyExistException("Email already Exists: "+userDTO.getEmail());
+        }
+
+        return userSevice.saveUser(userDTO);
     }
 }
