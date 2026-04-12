@@ -1,0 +1,18 @@
+server:
+  port: 4007
+
+grpc:
+  server:
+    port: 9002
+
+spring:
+  application:
+    name: ai-service
+  ai:
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
+        chat:
+          options:
+            model: gemini-2.5-flash
+            temperature: 0.2
