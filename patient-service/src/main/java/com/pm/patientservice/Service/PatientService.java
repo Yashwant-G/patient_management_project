@@ -118,6 +118,7 @@ public class PatientService {
         patient.setDateOfBirth(LocalDate.parse(patientRequestDTO.getDateOfBirth()));
 
         Patient updatedPatient = patientRepository.save(patient);
+        log.info("Patient updated: id={}", updatedPatient.getId());
 
         kafkaProducer.sendEvent(updatedPatient, "patient_updated", "PATIENT_UPDATED");
 
@@ -129,5 +130,6 @@ public class PatientService {
             throw new PatientNotFoundException("Patient with id " + id + " not found");
         }
         patientRepository.deleteById(id);
+        log.info("Patient deleted: id={}", id);
     }
 }

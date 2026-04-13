@@ -12,7 +12,7 @@ class AiParsingServiceTest {
 
     @Test
     void testParse() {
-        String input = "Book appointment tomorrow 5pm for dental checkup";
+        String input = "Book appointment tomorrow 5pm with Dr Patel for dental checkup";
 
         var response = aiParsingService.parse(input);
 

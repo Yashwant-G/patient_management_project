@@ -46,10 +46,13 @@ public class AuthService {
     }
 
     public String signUp(UserDTO userDTO) {
+        log.info("Sign-up attempt for email={}", userDTO.getEmail());
         if(userSevice.emailExist(userDTO.getEmail())){
             throw new EmailAlreadyExistException("Email already Exists: "+userDTO.getEmail());
         }
 
-        return userSevice.saveUser(userDTO);
+        String role = userSevice.saveUser(userDTO);
+        log.info("Sign-up successful for email={}, role={}", userDTO.getEmail(), role);
+        return role;
     }
 }

@@ -23,6 +23,13 @@ public class Appointment {
     @JoinColumn(name = "patient_id", referencedColumnName = "id", insertable = false, updatable = false)
     private CachedPatient cachedPatient;
 
+    @Column(name = "doctor_id")
+    private UUID doctorId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "doctor_id", referencedColumnName = "doctor_id", insertable = false, updatable = false)
+    private Doctor doctor;
+
     @NotNull(message = "Start Time is required")
     @Column(nullable = false)
     private LocalDateTime startTime;
@@ -47,6 +54,22 @@ public class Appointment {
 
     public void setCachedPatient(CachedPatient cachedPatient) {
         this.cachedPatient = cachedPatient;
+    }
+
+    public UUID getDoctorId() {
+        return doctorId;
+    }
+
+    public void setDoctorId(UUID doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    public Doctor getDoctor() {
+        return doctor;
+    }
+
+    public void setDoctor(Doctor doctor) {
+        this.doctor = doctor;
     }
 
     public Appointment() {

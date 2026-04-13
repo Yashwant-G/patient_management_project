@@ -8,6 +8,8 @@ public class AppointmentResponseDto {
     private UUID id;
     private UUID patientId;
     private String patientName;
+    private UUID doctorId;
+    private String doctorName;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String reason;
@@ -18,10 +20,13 @@ public class AppointmentResponseDto {
     }
 
     public AppointmentResponseDto(UUID id, UUID patientId, String patientName,
+                                  UUID doctorId, String doctorName,
                                   LocalDateTime startTime, LocalDateTime endTime, String reason, Long version) {
         this.id = id;
         this.patientId = patientId;
         this.patientName = patientName;
+        this.doctorId = doctorId;
+        this.doctorName = doctorName;
         this.startTime = startTime;
         this.endTime = endTime;
         this.reason = reason;
@@ -50,6 +55,22 @@ public class AppointmentResponseDto {
 
     public void setPatientName(String patientName) {
         this.patientName = patientName;
+    }
+
+    public UUID getDoctorId() {
+        return doctorId;
+    }
+
+    public void setDoctorId(UUID doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    public String getDoctorName() {
+        return doctorName;
+    }
+
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
     }
 
     public LocalDateTime getStartTime() {

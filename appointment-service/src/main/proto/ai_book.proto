@@ -16,4 +16,6 @@ message ParseAppointmentResponse{
   string start_time=2;
   string end_time=3;
   string reason=4;
+  string patient_name=5;
+  string doctor_name=6;
 }

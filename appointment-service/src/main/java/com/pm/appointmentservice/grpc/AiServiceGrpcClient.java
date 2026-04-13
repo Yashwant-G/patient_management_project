@@ -40,6 +40,8 @@ public class AiServiceGrpcClient {
 
         AppointmentResponseDto appointmentResponseDto=new AppointmentResponseDto();
         appointmentResponseDto.setPatientId(UUID.fromString(response.getPatientId()));
+        appointmentResponseDto.setPatientName(response.getPatientName());
+        appointmentResponseDto.setDoctorName(response.getDoctorName());
         appointmentResponseDto.setStartTime(LocalDateTime.parse(response.getStartTime()));
         appointmentResponseDto.setEndTime(LocalDateTime.parse(response.getEndTime()));
         appointmentResponseDto.setReason(response.getReason());

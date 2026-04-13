@@ -17,6 +17,8 @@ public class AppointmentMapper {
                     .setStartTime(node.get("start_time").asText(""))
                     .setEndTime(node.get("end_time").asText(""))
                     .setReason(node.get("reason").asText(""))
+                    .setPatientName(node.get("patient_name").asText(""))
+                    .setDoctorName(node.get("doctor_name").asText(""))
                     .build();
 
         } catch (Exception e) {
