@@ -16,7 +16,7 @@
     },
     {
       "key": "authPassword",
-      "value": "ChangeMe123!"
+      "value": "password123"
     },
     {
       "key": "bearerToken",
@@ -29,6 +29,18 @@
     {
       "key": "appointmentId",
       "value": ""
+    },
+    {
+      "key": "authServiceUrl",
+      "value": "http://localhost:4005"
+    },
+    {
+      "key": "patientServiceUrl",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "appointmentServiceUrl",
+      "value": "http://localhost:4006"
     }
   ],
   "item": [
@@ -350,6 +362,268 @@
             "description": "Parses a plain-text appointment description using the AI service and creates an appointment for the given patient. The body is a free-text string containing doctor name, date/time, and reason. The returned appointment `id` is automatically saved to the `appointmentId` collection variable."
           },
           "response": []
+        }
+      ]
+    },
+    {
+      "name": "Direct Service Access",
+      "description": "Requests that bypass the API Gateway (port 9000) and hit each microservice directly. Useful for local development and isolated service testing. No rate limiting or JWT gateway filter is applied — the services may still enforce their own auth internally.",
+      "item": [
+        {
+          "name": "Auth Service (port 4005)",
+          "item": [
+            {
+              "name": "Login (direct)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Login request succeeded\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "var data = {};",
+                      "try {",
+                      "    data = pm.response.json();",
+                      "} catch (e) {",
+                      "    data = {};",
+                      "}",
+                      "",
+                      "if (data.token) {",
+                      "    pm.collectionVariables.set(\"bearerToken\", data.token);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"password\": \"{{authPassword}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{authServiceUrl}}/login",
+                  "host": ["{{authServiceUrl}}"],
+                  "path": ["login"]
+                },
+                "description": "Direct POST to auth-service:4005/login — strips the `/auth` prefix that the gateway applies. Gateway route: `/auth/**` → `auth-service:4005` (StripPrefix=1)."
+              },
+              "response": []
+            },
+            {
+              "name": "Validate Token (direct)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{bearerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{authServiceUrl}}/validate",
+                  "host": ["{{authServiceUrl}}"],
+                  "path": ["validate"]
+                },
+                "description": "Direct GET to auth-service:4005/validate. Gateway route: `/auth/**` → `auth-service:4005` (StripPrefix=1)."
+              },
+              "response": []
+            },
+            {
+              "name": "OpenAPI Doc (direct)",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{authServiceUrl}}/v3/api-docs",
+                  "host": ["{{authServiceUrl}}"],
+                  "path": ["v3", "api-docs"]
+                },
+                "description": "Direct GET to auth-service:4005/v3/api-docs. Gateway route: `/api-docs/auth` → `auth-service:4005/v3/api-docs` (RewritePath)."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Patient Service (port 4000)",
+          "item": [
+            {
+              "name": "List Patients (direct)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{bearerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{patientServiceUrl}}/patients?page=1&size=10&sort=asc&sortField=name&searchValue=",
+                  "host": ["{{patientServiceUrl}}"],
+                  "path": ["patients"],
+                  "query": [
+                    {"key": "page", "value": "1"},
+                    {"key": "size", "value": "10"},
+                    {"key": "sort", "value": "asc"},
+                    {"key": "sortField", "value": "name"},
+                    {"key": "searchValue", "value": ""}
+                  ]
+                },
+                "description": "Direct GET to patient-service:4000/patients. Gateway route: `/api/patients/**` → `patient-service:4000` (StripPrefix=1, JwtValidation)."
+              },
+              "response": []
+            },
+            {
+              "name": "Create Patient (direct)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Content-Type", "value": "application/json"},
+                  {"key": "Authorization", "value": "Bearer {{bearerToken}}"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Chris Evans\",\n  \"email\": \"chris.evans@example.com\",\n  \"address\": \"12 Lake View Road, Chennai\",\n  \"dateOfBirth\": \"1992-08-14\",\n  \"registeredDate\": \"2026-03-24\"\n}"
+                },
+                "url": {
+                  "raw": "{{patientServiceUrl}}/patients",
+                  "host": ["{{patientServiceUrl}}"],
+                  "path": ["patients"]
+                },
+                "description": "Direct POST to patient-service:4000/patients. Gateway route: `/api/patients/**` → `patient-service:4000` (StripPrefix=1, JwtValidation)."
+              },
+              "response": []
+            },
+            {
+              "name": "Update Patient (direct)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {"key": "Content-Type", "value": "application/json"},
+                  {"key": "Authorization", "value": "Bearer {{bearerToken}}"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"John Doe Updated\",\n  \"email\": \"john.doe.updated@example.com\",\n  \"address\": \"500 Updated Street, Bengaluru\",\n  \"dateOfBirth\": \"1985-06-15\",\n  \"registeredDate\": \"2024-01-10\"\n}"
+                },
+                "url": {
+                  "raw": "{{patientServiceUrl}}/patients/{{patientId}}",
+                  "host": ["{{patientServiceUrl}}"],
+                  "path": ["patients", "{{patientId}}"]
+                },
+                "description": "Direct PUT to patient-service:4000/patients/{id}. Gateway route: `/api/patients/**` → `patient-service:4000` (StripPrefix=1, JwtValidation)."
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Patient (direct)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{bearerToken}}"}
+                ],
+                "url": {
+                  "raw": "{{patientServiceUrl}}/patients/{{patientId}}",
+                  "host": ["{{patientServiceUrl}}"],
+                  "path": ["patients", "{{patientId}}"]
+                },
+                "description": "Direct DELETE to patient-service:4000/patients/{id}. Gateway route: `/api/patients/**` → `patient-service:4000` (StripPrefix=1, JwtValidation)."
+              },
+              "response": []
+            },
+            {
+              "name": "OpenAPI Doc (direct)",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{patientServiceUrl}}/v3/api-docs",
+                  "host": ["{{patientServiceUrl}}"],
+                  "path": ["v3", "api-docs"]
+                },
+                "description": "Direct GET to patient-service:4000/v3/api-docs. Gateway route: `/api-docs/patients` → `patient-service:4000/v3/api-docs` (RewritePath)."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Appointment Service (port 4006)",
+          "item": [
+            {
+              "name": "Get Appointments by Date Range (direct)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{bearerToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{appointmentServiceUrl}}/appointments?from=2026-04-01T00:00:00&to=2026-04-30T23:59:59",
+                  "host": ["{{appointmentServiceUrl}}"],
+                  "path": ["appointments"],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-04-01T00:00:00",
+                      "description": "Start of the date-time range (ISO-8601 LocalDateTime)"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-04-30T23:59:59",
+                      "description": "End of the date-time range (ISO-8601 LocalDateTime)"
+                    }
+                  ]
+                },
+                "description": "Direct GET to appointment-service:4006/appointments. Gateway route: `/api/appointments/**` → `appointment-service:4006` (StripPrefix=1, JwtValidation)."
+              },
+              "response": []
+            },
+            {
+              "name": "Create Appointment via AI (direct)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Content-Type", "value": "text/plain"},
+                  {"key": "Authorization", "value": "Bearer {{bearerToken}}"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "I have an appointment with Dr. Smith on 2026-05-10 at 14:00 for a routine checkup"
+                },
+                "url": {
+                  "raw": "{{appointmentServiceUrl}}/appointments/ai-add/{{patientId}}",
+                  "host": ["{{appointmentServiceUrl}}"],
+                  "path": ["appointments", "ai-add", "{{patientId}}"]
+                },
+                "description": "Direct POST to appointment-service:4006/appointments/ai-add/{patientId}. Gateway route: `/api/appointments/**` → `appointment-service:4006` (StripPrefix=1, JwtValidation)."
+              },
+              "response": []
+            },
+            {
+              "name": "OpenAPI Doc (direct)",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{appointmentServiceUrl}}/v3/api-docs",
+                  "host": ["{{appointmentServiceUrl}}"],
+                  "path": ["v3", "api-docs"]
+                },
+                "description": "Direct GET to appointment-service:4006/v3/api-docs. Gateway route: `/api-docs/appointments` → `appointment-service:4006/v3/api-docs` (RewritePath)."
+              },
+              "response": []
+            }
+          ]
         }
       ]
     },
