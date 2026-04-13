@@ -14,6 +14,11 @@ CREATE TABLE IF NOT EXISTS doctor (
     email TEXT UNIQUE
 );
 
+-- Create full-text search index for doctor_full_name
+CREATE INDEX IF NOT EXISTS doctor_full_name_fts_idx
+    ON doctor
+    USING GIN (to_tsvector('english', full_name));
+
 -- Create appointment table if it doesn't exist
 CREATE TABLE IF NOT EXISTS appointment (
     appointment_id UUID PRIMARY KEY,
