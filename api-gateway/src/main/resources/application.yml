@@ -22,6 +22,13 @@ spring:
           filters:
             - StripPrefix=1
 
+        - id: api-docs-auth-route
+          uri: http://auth-service:4005
+          predicates:
+            - Path=/api-docs/auth
+          filters:
+            - RewritePath=/api-docs/auth,/v3/api-docs
+
         # Route for /api/patients/** to patient-service
         - id: patient-service-route
           uri: http://patient-service:4000
@@ -39,9 +46,19 @@ spring:
           filters:
             - RewritePath=/api-docs/patients,/v3/api-docs
 
-        - id: api-docs-auth-route
-          uri: http://auth-service:4005
+        # Route for /api/appointments/** to appointment-service
+        - id: appointment-service-route
+          uri: http://appointment-service:4006
           predicates:
-            - Path=/api-docs/auth
+            - Path=/api/appointments/**
           filters:
-            - RewritePath=/api-docs/auth,/v3/api-docs
+            - StripPrefix=1
+            - JwtValidation
+
+        # Route for /api-docs/appointments to appointment-service /v3/api-docs
+        - id: api-docs-appointment-route
+          uri: http://appointment-service:4006
+          predicates:
+            - Path=/api-docs/appointments
+          filters:
+            - RewritePath=/api-docs/appointments,/v3/api-docs

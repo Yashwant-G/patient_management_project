@@ -40,58 +40,88 @@ The Patient Management System is an enterprise-grade microservices platform desi
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Client Applications                      │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
-                    ┌────────────────┐
-                    │  API Gateway   │ (Port: 9000)
-                    │  (WebFlux)     │
-                    └────────┬───────┘
-                             │
-        ┌────────────────────┼────────────────────┐
-        │                    │                    │
-        ▼                    ▼                    ▼
-   ┌─────────┐         ┌──────────┐         ┌─────────────┐
-   │ Patient │         │  Auth    │         │ Appointment │
-   │ Service │         │ Service  │         │  Service    │
-   │(Port:   │         │(Port:    │         │(Port: 4006) │
-   │ 4000)   │         │ 4005)    │         └─────────────┘
-   └────┬────┘         └────┬─────┘              │
-        │                   │                    │
-        │    ┌──────────────┴────────────────┐   │
-        │    │                               │   │
-        ▼    ▼                               ▼   ▼
-   ┌─────────────────────┐        ┌──────────────────┐
-   │   Event Stream      │        │ Analytics Service│
-   │     (Kafka)         │        │   (Consumer)     │
-   └─────────────────────┘        └──────────────────┘
-        │
-        ▼
-   ┌─────────────────────┐
-   │ Billing Service     │
-   │ (Event Consumer)    │
-   └─────────────────────┘
+                     ┌──────────────────────────────────────┐
+                     │         Client Applications           │
+                     └────────────────┬─────────────────────┘
+                                      │ HTTP Requests
+                                      ▼
+                          ┌───────────────────────────┐
+                          │        API Gateway         │
+                          │        (Port: 9000)        │
+                          │   JWT Validation Filter    │
+                          └────────┬─────────┬─────────┘
+                                   │         │
+              ┌────────────────────┘         └──────────────────────┐
+              │                                                       │
+              ▼                                                       ▼
+   ┌──────────────────────┐                          ┌───────────────────────────┐
+   │     Auth Service     │                          │      Patient Service       │
+   │     (Port: 4005)     │                          │      (Port: 4000)          │
+   │  - User registration │                          │  - Spring Actuator (metrics│
+   │  - JWT generate      │                          │    exposed to Prometheus)  │
+   │  - JWT validate      │                          │  - Redis cache (1 endpoint)│
+   │  - PostgreSQL        │                          │  - PostgreSQL              │
+   └──────────────────────┘                          └────┬──────┬───────┬───────┘
+                                                          │      │       │
+                           ┌──────────────────────────────┘      │       └──────────────────────┐
+                           │  Kafka (Protobuf)                    │ gRPC (Protobuf)               │ Kafka (Protobuf)
+                           ▼                                      ▼                               ▼
+              ┌────────────────────────┐              ┌────────────────────┐     ┌──────────────────────────┐
+              │    Analytics Service   │              │   Billing Service  │     │   Appointment Service     │
+              │  - Kafka consumer      │              │  - gRPC server     │     │   (Port: 4006)            │
+              │  - Patient event stats │              │  - Bill generation │     │  - Kafka consumer         │
+              │  - PostgreSQL          │              │  - PostgreSQL      │     │  - Syncs cached_patient   │
+              └────────────────────────┘              └────────────────────┘     │    table from Kafka event │
+                                                                                 │  - PostgreSQL             │
+                                                                                 └────────────┬─────────────┘
+                                                                                              │ gRPC (Protobuf)
+                                                                                              ▼
+                                                                                 ┌────────────────────────────┐
+                                                                                 │       AI Service           │
+                                                                                 │      (Port: 4007)          │
+                                                                                 │   gRPC Server: 9002        │
+                                                                                 │   Gemini 2.5 Flash         │
+                                                                                 │   (Google GenAI)           │
+                                                                                 │   - PostgreSQL             │
+                                                                                 └────────────────────────────┘
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                               Infrastructure (Dockerized via Docker Compose)
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+   ┌──────────────┐   ┌───────────────────┐   ┌────────────────────┐   ┌────────────┐   ┌───────────┐
+   │  PostgreSQL  │   │       Redis        │   │    Apache Kafka    │   │ Prometheus │   │  Grafana  │
+   │ (per service │   │  (Patient Service  │   │  + Zookeeper       │   │ (scrapes   │   │(dashboard │
+   │  own DB)     │   │   one endpoint)    │   │  (event streaming) │   │ actuator)  │   │& alerts)  │
+   └──────────────┘   └───────────────────┘   └────────────────────┘   └────────────┘   └───────────┘
 ```
+
+### Data Flow Summary
+
+| Flow | Source | Protocol | Target | Purpose |
+|------|--------|----------|--------|---------|
+| Patient events | Patient Service | **Kafka** (Protobuf) | Analytics Service | Real-time analytics |
+| Patient events | Patient Service | **Kafka** (Protobuf) | Appointment Service | Sync `cached_patient` table |
+| Billing trigger | Patient Service | **gRPC** (Protobuf) | Billing Service | Trigger bill generation |
+| Appointment AI query | Appointment Service | **gRPC** (Protobuf) | AI Service | Doctor/patient AI queries |
+| Auth validation | Auth Service | **REST** (JWT) | API Gateway filter | Route-level JWT validation |
+| Metrics scrape | Patient Service | **HTTP** (Actuator) | Prometheus → Grafana | Observability |
 
 ---
 
 ## 🔧 Services
 
 ### 📱 **API Gateway**
-**Port:** `9000`  
-**Purpose:** Single entry point for all client requests  
+**Port:** `9000`
+**Purpose:** Single entry point for all client requests
 **Features:**
-- Request routing and load balancing
+- Request routing to downstream services
+- **JWT Validation Filter** — validates Bearer tokens on every request before forwarding (token issued by Auth Service)
+- Reactive processing with Spring Cloud Gateway (WebFlux)
 - Rate limiting and request throttling
-- Response caching with Redis
-- Reactive processing with Spring Cloud Gateway
-- Security filter chains
 
 **Technology Stack:**
-- Spring Cloud Gateway (Webflux)
-- Spring Data Redis Reactive
+- Spring Cloud Gateway (WebFlux)
 - Spring Boot 3.5.9
 
 ---
@@ -119,13 +149,12 @@ The Patient Management System is an enterprise-grade microservices platform desi
 **Port:** `4000`  
 **Purpose:** Core patient data management  
 **Features:**
-- Patient CRUD operations
-- Medical history tracking
-- Event publication for updates
-- gRPC endpoints for inter-service communication
-- Redis caching for frequently accessed data
-- Circuit breaker for fault tolerance
-- Metrics collection with Prometheus
+- Patient CRUD operations and medical history tracking
+- Publishes patient events to Kafka (consumed by Analytics and Appointment Services) using Protobuf serialization
+- Calls Billing Service directly via **gRPC** (Protobuf) to trigger billing on patient events
+- **Redis cache** on one specific read endpoint for low-latency responses
+- **Spring Actuator** endpoints exposed for Prometheus scraping (`/actuator/prometheus`, `/actuator/health`)
+- Circuit breaker for fault tolerance (Resilience4j)
 
 **Technology Stack:**
 - Spring Boot 3.5.8
@@ -140,22 +169,41 @@ The Patient Management System is an enterprise-grade microservices platform desi
 ---
 
 ### 📅 **Appointment Service**
-**Port:** `4006`  
-**Purpose:** Appointment scheduling and management  
+**Port:** `4006`
+**Purpose:** Appointment scheduling and management
 **Features:**
-- Schedule appointments
-- Appointment modification and cancellation
-- Event consumption from Kafka
-- Patient availability checking
-- gRPC integration with other services
+- Schedule, modify, and cancel appointments
+- Consumes patient events from Kafka to maintain a local `cached_patient` table (keeps in sync with the Patient Service's main patient table)
+- Forwards appointment/doctor queries to AI Service via gRPC for AI-assisted responses
+- Protocol Buffers for all inter-service communication
+- PostgreSQL for appointments and cached patient data
 
 **Technology Stack:**
 - Spring Boot 3.4.5
 - Spring Data JPA
-- PostgreSQL
-- Kafka (Consumer/Producer)
+- PostgreSQL (appointments + `cached_patient` table)
+- Kafka (Consumer — patient events)
+- gRPC Client (→ AI Service)
 - Protocol Buffers
-- Jackson for JSON processing
+
+---
+
+### 🤖 **AI Service**
+**Port:** `4007` | **gRPC Port:** `9002`
+**Purpose:** AI-powered medical query assistance using Google Gemini
+**Features:**
+- Receives appointment/doctor queries via gRPC from Appointment Service
+- Processes queries using Google Gemini 2.5 Flash model
+- Low-temperature (0.2) responses for consistent medical output
+- Protocol Buffers for all gRPC communication
+- PostgreSQL for query/response persistence
+
+**Technology Stack:**
+- Spring Boot
+- gRPC Server
+- Spring AI (Google GenAI / Gemini 2.5 Flash)
+- Protocol Buffers
+- PostgreSQL
 
 ---
 
@@ -177,49 +225,52 @@ The Patient Management System is an enterprise-grade microservices platform desi
 ---
 
 ### 💰 **Billing Service**
-**Purpose:** Billing and payment processing  
+**Purpose:** Billing and payment processing
 **Features:**
-- Bill generation and management
+- Receives billing triggers from Patient Service via **gRPC** (Protobuf)
+- Bill generation and invoice management
 - Payment tracking
-- Event-driven billing triggers
-- Invoice generation
-- gRPC communication with other services
+- PostgreSQL for billing records
 
 **Technology Stack:**
 - Spring Boot 3.5.8
-- gRPC
-- Kafka (Consumer)
+- gRPC Server (receives calls from Patient Service)
 - Protocol Buffers
+- PostgreSQL
 
 ---
 
-### 📈 **Monitoring**
-**Purpose:** System monitoring and metrics collection  
+### 📈 **Monitoring (Prometheus + Grafana)**
+**Purpose:** System observability and metrics dashboards
 **Features:**
-- Prometheus configuration
-- Service health checks
-- Performance metrics
-- Custom application metrics
+- **Prometheus** scrapes `/actuator/prometheus` on Patient Service (and other services with Actuator enabled)
+- **Grafana** connects to Prometheus as a data source for dashboards and alerting
+- Spring Actuator health, info, and metrics endpoints
+- Configuration in `monitoring/prometheus.yml`
+
+**Access:**
+- Prometheus UI: `http://localhost:9090`
+- Grafana Dashboard: `http://localhost:3000` (default credentials: `admin / admin`)
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Component | Technology | Version |
+| Component | Technology | Version / Notes |
 |-----------|-----------|---------|
 | **Language** | Java | 21 |
 | **Framework** | Spring Boot | 3.4.5 - 3.5.9 |
-| **API Gateway** | Spring Cloud Gateway | 2025.0.1 |
+| **API Gateway** | Spring Cloud Gateway (WebFlux) | 2025.0.1 |
 | **Message Queue** | Apache Kafka | 7.5.0 |
 | **RPC** | gRPC | 1.68.1 - 1.69.0 |
 | **Serialization** | Protocol Buffers | 3.25.5 |
 | **Authentication** | JWT (JJWT) | 0.12.6 |
-| **Database** | PostgreSQL | Latest |
-| **Cache** | Redis | Latest |
-| **Monitoring** | Prometheus | Latest |
+| **AI Model** | Google Gemini 2.5 Flash | via Spring AI (Google GenAI) |
+| **Database** | PostgreSQL | Each service has its own DB |
+| **Cache** | Redis | Patient Service (1 endpoint) |
+| **Metrics** | Prometheus + Grafana | Scrapes Actuator endpoints |
 | **Resilience** | Resilience4j | 2.3.0 |
-| **Container** | Docker | Latest |
-| **Orchestration** | Docker Compose | 3.8 |
+| **Container** | Docker + Docker Compose | Compose v3.8 |
 
 ---
 
@@ -282,6 +333,9 @@ docker-compose ps
 - Patient Service: `http://localhost:4000`
 - Auth Service: `http://localhost:4005`
 - Appointment Service: `http://localhost:4006`
+- AI Service: `http://localhost:4007` | gRPC: `localhost:9002`
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3000`
 
 ### Option 2: Run Services Individually
 
@@ -472,17 +526,23 @@ curl -X POST http://localhost:4006/api/appointments \
 
 ## 📊 Monitoring
 
-### Prometheus Metrics
+### Actuator Endpoints (Patient Service — primary metrics source)
 
-Access Prometheus metrics endpoints:
+| Endpoint | URL |
+|----------|-----|
+| Prometheus metrics | `http://localhost:4000/actuator/prometheus` |
+| Health check | `http://localhost:4000/actuator/health` |
+| Info | `http://localhost:4000/actuator/info` |
 
-- **Patient Service Metrics:** `http://localhost:4000/actuator/prometheus`
-- **Auth Service Metrics:** `http://localhost:4005/actuator/prometheus`
-- **Appointment Service Metrics:** `http://localhost:4006/actuator/prometheus`
+### Prometheus & Grafana
 
-### Health Checks
+- **Prometheus UI:** `http://localhost:9090` — query scraped metrics
+- **Grafana Dashboard:** `http://localhost:3000` — visualization and alerting (default login: `admin / admin`)
+- Prometheus is configured to scrape Patient Service's `/actuator/prometheus` endpoint
+- Grafana connects to Prometheus as a data source
 
-- **Patient Service Health:** `http://localhost:4000/actuator/health`
+### Other Service Health Checks
+
 - **Auth Service Health:** `http://localhost:4005/actuator/health`
 - **Appointment Service Health:** `http://localhost:4006/actuator/health`
 

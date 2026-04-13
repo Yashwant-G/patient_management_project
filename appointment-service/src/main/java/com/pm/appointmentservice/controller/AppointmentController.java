@@ -2,6 +2,8 @@ package com.pm.appointmentservice.controller;
 
 import com.pm.appointmentservice.dto.AppointmentResponseDto;
 import com.pm.appointmentservice.service.AppointmentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Tag(name = "Appointment Management", description = "APIs for managing appointments")
 @RestController
 @RequestMapping("/appointments")
 public class AppointmentController {
@@ -23,12 +26,14 @@ public class AppointmentController {
         this.appointmentService = appointmentService;
     }
 
+    @Operation(summary = "Get appointments by date range")
     @GetMapping
     public List<AppointmentResponseDto> getAppointmentByDateRange(@RequestParam LocalDateTime from, @RequestParam LocalDateTime to) {
         log.info("GET /appointments - from={}, to={}", from, to);
         return appointmentService.getAppointmentByDateRange(from, to);
     }
 
+    @Operation(summary = "Create appointment from AI-generated text")
     @PostMapping( "/ai-add/{id}")
     public ResponseEntity<AppointmentResponseDto> addAiTextAppointment(@RequestBody String text, @PathVariable UUID id){
         log.info("POST /appointments/ai-add/{} - received AI appointment text", id);

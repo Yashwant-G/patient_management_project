@@ -25,6 +25,10 @@
     {
       "key": "patientId",
       "value": "123e4567-e89b-12d3-a456-426614174000"
+    },
+    {
+      "key": "appointmentId",
+      "value": ""
     }
   ],
   "item": [
@@ -251,6 +255,105 @@
       ]
     },
     {
+      "name": "Appointment APIs",
+      "item": [
+        {
+          "name": "Get Appointments by Date Range",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments?from=2026-04-01T00:00:00&to=2026-04-30T23:59:59",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-04-01T00:00:00",
+                  "description": "Start of the date-time range (ISO-8601 LocalDateTime)"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-04-30T23:59:59",
+                  "description": "End of the date-time range (ISO-8601 LocalDateTime)"
+                }
+              ]
+            },
+            "description": "Returns all appointments whose start time falls within the given `from`/`to` date-time range. Both parameters are required and must be ISO-8601 LocalDateTime values (e.g. `2026-04-01T10:00:00`)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Appointment via AI (natural language)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Appointment created\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "var data = {};",
+                  "try {",
+                  "    data = pm.response.json();",
+                  "} catch (e) {",
+                  "    data = {};",
+                  "}",
+                  "",
+                  "if (data.id) {",
+                  "    pm.collectionVariables.set(\"appointmentId\", data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bearerToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "I have an appointment with Dr. Smith on 2026-05-10 at 14:00 for a routine checkup"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/ai-add/{{patientId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments",
+                "ai-add",
+                "{{patientId}}"
+              ]
+            },
+            "description": "Parses a plain-text appointment description using the AI service and creates an appointment for the given patient. The body is a free-text string containing doctor name, date/time, and reason. The returned appointment `id` is automatically saved to the `appointmentId` collection variable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "API Docs",
       "item": [
         {
@@ -286,6 +389,24 @@
               ]
             },
             "description": "Gateway route that rewrites to the auth service OpenAPI document."
+          },
+          "response": []
+        },
+        {
+          "name": "Appointment OpenAPI Doc",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api-docs/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api-docs",
+                "appointments"
+              ]
+            },
+            "description": "Gateway route that rewrites to the appointment service OpenAPI document."
           },
           "response": []
         }
