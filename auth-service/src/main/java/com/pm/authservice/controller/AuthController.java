@@ -44,11 +44,14 @@ public class AuthController {
     @GetMapping("/validate")
     public ResponseEntity<String> validateToken(@RequestHeader("Authorization") String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.error("Invalid JWT Token header: {}", authHeader);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         //Example token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         String token = authHeader.substring(7);
+
+        log.info("Recieved token in controller for validation: {}", token);
 
         return authService.validate(token) ?
                 ResponseEntity.ok().body("Token is valid") :

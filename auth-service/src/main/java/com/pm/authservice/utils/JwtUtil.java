@@ -7,6 +7,8 @@ import io.jsonwebtoken.security.SignatureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -27,7 +29,15 @@ public class JwtUtil {
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String email, String role) {
+    public String generateToken(Authentication authentication) {
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+
+        String email = userDetails.getUsername();
+        String role = userDetails.getAuthorities().stream()
+                .findFirst()
+                .map(a -> a.getAuthority().replace("ROLE_", ""))
+                .orElse("PATIENT");
+
         log.info("Generating token for email: {} with role: {}", email, role);
         return Jwts.builder()
                 .subject(email)
@@ -39,11 +49,11 @@ public class JwtUtil {
     }
 
     public void validateToken(String token) {
-        try{
+        try {
             Jwts.parser().verifyWith((SecretKey) secretKey).build().parseSignedClaims(token);
-        }catch (SignatureException e){
+        } catch (SignatureException e) {
             throw new JwtException("Invalid JWT signature");
-        }catch (JwtException e) {
+        } catch (JwtException e) {
             throw new JwtException("Invalid JWT token");
         }
     }

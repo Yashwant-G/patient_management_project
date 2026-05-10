@@ -1,6 +1,8 @@
 package com.pm.authservice.entity;
 
+import com.pm.authservice.enums.RolesEnum;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
@@ -12,15 +14,18 @@ public class User {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(unique = true,nullable = false)
+    @Column(unique = true, nullable = false)
     private String email;
 
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role;
+    private RolesEnum role;
 
+    @NotNull
+    private Boolean enabled = true;
     // Getters and Setters
 
     public UUID getId() {
@@ -47,12 +52,20 @@ public class User {
         this.password = password;
     }
 
-    public String getRole() {
+    public RolesEnum getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(RolesEnum role) {
         this.role = role;
+    }
+
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
     }
 }
 

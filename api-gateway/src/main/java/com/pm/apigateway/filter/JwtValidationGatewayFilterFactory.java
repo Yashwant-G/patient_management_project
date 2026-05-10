@@ -28,7 +28,7 @@ public class JwtValidationGatewayFilterFactory extends AbstractGatewayFilterFact
     private final Key secretkey;
 
     public JwtValidationGatewayFilterFactory(
-            @Value("${jwt_secret}") String secret) {
+            @Value("${jwt.secret}") String secret) {
         byte[] keyBytes = Base64.getDecoder().decode(secret.getBytes(StandardCharsets.UTF_8));
         this.secretkey = Keys.hmacShaKeyFor(keyBytes);
     }

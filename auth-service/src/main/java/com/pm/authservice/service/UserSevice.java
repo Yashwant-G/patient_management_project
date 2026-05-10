@@ -2,6 +2,7 @@ package com.pm.authservice.service;
 
 import com.pm.authservice.dto.UserDTO;
 import com.pm.authservice.entity.User;
+import com.pm.authservice.enums.RolesEnum;
 import com.pm.authservice.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,9 +38,9 @@ public class UserSevice {
         User user=new User();
         user.setEmail(userDTO.getEmail());
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-        user.setRole(String.valueOf(userDTO.getRole()));
+        user.setRole(RolesEnum.valueOf(String.valueOf(userDTO.getRole())));
 
-        String role = userRepository.save(user).getRole();
+        String role = userRepository.save(user).getRole().name();
         log.info("User saved successfully with role={}", role);
         return role;
     }

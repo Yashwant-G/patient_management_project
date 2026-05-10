@@ -1,5 +1,5 @@
 server:
-  port: 9000 # Gateway listens this port
+  port: 9000 # Gateway listens to this port
 
 spring:
   data:
@@ -36,7 +36,7 @@ spring:
             - Path=/api/patients/**
           filters:
             - StripPrefix=1
-            - JwtValidation
+            # - JwtValidation
 
         # Route for /api/docs/patients to patient-service /v3/api-docs
         - id: api-docs-patient-route
@@ -53,7 +53,7 @@ spring:
             - Path=/api/appointments/**
           filters:
             - StripPrefix=1
-            - JwtValidation
+            # - JwtValidation
 
         # Route for /api-docs/appointments to appointment-service /v3/api-docs
         - id: api-docs-appointment-route
@@ -62,3 +62,19 @@ spring:
             - Path=/api-docs/appointments
           filters:
             - RewritePath=/api-docs/appointments,/v3/api-docs
+
+        # Route for /api/doctors/** to doctor-service
+        - id: doctor-service-route
+          uri: http://doctor-service:4008
+          predicates:
+            - Path=/api/doctors/**
+          filters:
+            - StripPrefix=1
+
+        # Route for /api-docs/doctors to doctor-service /v3/api-docs
+        - id: api-docs-doctor-route
+          uri: http://doctor-service:4008
+          predicates:
+            - Path=/api-docs/doctors
+          filters:
+            - RewritePath=/api-docs/doctors,/v3/api-docs
