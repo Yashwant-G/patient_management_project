@@ -130,7 +130,7 @@ The Patient Management System is an enterprise-grade microservices platform desi
 **Port:** `4005`  
 **Purpose:** Centralized authentication and authorization  
 **Features:**
-- User registration and login
+- User registration (`/signup`) and login
 - JWT token generation and validation
 - Role-based access control (RBAC)
 - Password encryption and security
@@ -204,6 +204,31 @@ The Patient Management System is an enterprise-grade microservices platform desi
 - Spring AI (Google GenAI / Gemini 2.5 Flash)
 - Protocol Buffers
 - PostgreSQL
+
+---
+
+### 👨‍⚕️ **Doctor Service**
+**Port:** `4008`
+**Purpose:** Doctor information and management
+**Features:**
+- Doctor profile search by name (full-text search)
+- Retrieve full doctor details by ID (qualifications, specialization, contact)
+- Get minimal doctor information (quick lookups)
+- Validate doctor existence
+- PostgreSQL for doctor records
+- OpenAPI/Swagger documentation
+
+**Endpoints:**
+- `GET /doctors/search?name={name}` — Search doctors by name
+- `GET /doctors/{id}` — Get complete doctor details
+- `GET /doctors/{id}/minimal` — Get minimal doctor info
+- `GET /doctors/{id}/exists` — Check if doctor exists
+
+**Technology Stack:**
+- Spring Boot 3.5.8
+- Spring Data JPA
+- PostgreSQL
+- Springdoc OpenAPI
 
 ---
 
@@ -333,6 +358,7 @@ docker-compose ps
 - Patient Service: `http://localhost:4000`
 - Auth Service: `http://localhost:4005`
 - Appointment Service: `http://localhost:4006`
+- Doctor Service: `http://localhost:4008`
 - AI Service: `http://localhost:4007` | gRPC: `localhost:9002`
 - Prometheus: `http://localhost:9090`
 - Grafana: `http://localhost:3000`
@@ -367,11 +393,15 @@ mvn spring-boot:run
 cd api-gateway
 mvn spring-boot:run
 
-# Terminal 7 - Start Analytics Service (Optional)
+# Terminal 7 - Start Doctor Service
+cd doctor-service
+mvn spring-boot:run
+
+# Terminal 8 - Start Analytics Service (Optional)
 cd analytics-service
 mvn spring-boot:run
 
-# Terminal 8 - Start Billing Service (Optional)
+# Terminal 9 - Start Billing Service (Optional)
 cd billing-service
 mvn spring-boot:run
 ```
@@ -387,6 +417,9 @@ curl http://localhost:4000/swagger-ui.html
 
 # Check Auth Service
 curl http://localhost:4005/swagger-ui.html
+
+# Check Doctor Service
+curl http://localhost:4008/swagger-ui.html
 ```
 
 ---
@@ -419,6 +452,7 @@ API_GATEWAY_PORT=9000
 AUTH_SERVICE_PORT=4005
 PATIENT_SERVICE_PORT=4000
 APPOINTMENT_SERVICE_PORT=4006
+DOCTOR_SERVICE_PORT=4008
 
 # Spring Profiles
 SPRING_PROFILES_ACTIVE=dev
@@ -455,11 +489,20 @@ All services include **Swagger/OpenAPI** documentation:
 
 - **Patient Service Swagger UI:** `http://localhost:4000/swagger-ui.html`
 - **Auth Service Swagger UI:** `http://localhost:4005/swagger-ui.html`
-- **Appointment Service:** `http://localhost:4006/swagger-ui.html`
+- **Appointment Service Swagger UI:** `http://localhost:4006/swagger-ui.html`
+- **Doctor Service Swagger UI:** `http://localhost:4008/swagger-ui.html`
 
 ### Postman Collection
 
-Import the provided `patient-management.postman_collection.json` into Postman for ready-to-use API requests.
+Import the provided `patient-management.postman_collection.json` into Postman for ready-to-use API requests covering all services (Auth, Patient, Appointment, and Doctor APIs with both Gateway and Direct Service Access options).
+
+**Collection Features:**
+- ✅ SignUp endpoint for user registration
+- ✅ Doctor API endpoints (search, get details, minimal info, existence check)
+- ✅ Gateway routes (port 9000) for all services
+- ✅ Direct service access (ports 4000, 4005, 4006, 4008) for testing
+- ✅ Pre-configured collection variables (baseUrl, authEmail, bearerToken, etc.)
+- ✅ Test scripts for automatic token management
 
 ```bash
 # Open Postman and import:
@@ -470,10 +513,15 @@ File → Import → patient-management.postman_collection.json
 
 **Authentication:**
 ```bash
-# Login
-curl -X POST http://localhost:4005/api/auth/login \
+# Sign Up
+curl -X POST http://localhost:9000/auth/signup \
   -H "Content-Type: application/json" \
-  -d '{"username":"user","password":"password"}'
+  -d '{"email":"newuser@test.com","password":"password123"}'
+
+# Login
+curl -X POST http://localhost:9000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"testuser@test.com","password":"password123"}'
 
 # Response: JWT Token
 {
@@ -485,41 +533,60 @@ curl -X POST http://localhost:4005/api/auth/login \
 **Patient Operations:**
 ```bash
 # Get all patients
-curl -X GET http://localhost:4000/api/patients \
+curl -X GET http://localhost:9000/api/patients \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
 # Create patient
-curl -X POST http://localhost:4000/api/patients \
+curl -X POST http://localhost:9000/api/patients \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"name":"John Doe","email":"john@example.com"}'
+  -d '{"name":"John Doe","email":"john@example.com","address":"123 Main St","dateOfBirth":"1990-01-01","registeredDate":"2026-05-10"}'
 
 # Get patient by ID
-curl -X GET http://localhost:4000/api/patients/1 \
+curl -X GET http://localhost:9000/api/patients/123e4567-e89b-12d3-a456-426614174000 \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
 # Update patient
-curl -X PUT http://localhost:4000/api/patients/1 \
+curl -X PUT http://localhost:9000/api/patients/123e4567-e89b-12d3-a456-426614174000 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"name":"Jane Doe"}'
+  -d '{"name":"Jane Doe","email":"jane@example.com","address":"456 Oak Ave","dateOfBirth":"1990-01-01"}'
 
 # Delete patient
-curl -X DELETE http://localhost:4000/api/patients/1 \
+curl -X DELETE http://localhost:9000/api/patients/123e4567-e89b-12d3-a456-426614174000 \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 **Appointment Operations:**
 ```bash
-# Get all appointments
-curl -X GET http://localhost:4006/api/appointments \
+# Get appointments by date range
+curl -X GET "http://localhost:9000/api/appointments?from=2026-05-01T00:00:00&to=2026-05-31T23:59:59" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
-# Schedule appointment
-curl -X POST http://localhost:4006/api/appointments \
-  -H "Content-Type: application/json" \
+# Create appointment via AI (natural language)
+curl -X POST http://localhost:9000/api/appointments/ai-add/123e4567-e89b-12d3-a456-426614174000 \
+  -H "Content-Type: text/plain" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"patientId":1,"doctorId":1,"appointmentDate":"2026-04-15T10:00:00"}'
+  -d "I have an appointment with Dr. Smith on 2026-05-15 at 14:00 for a routine checkup"
+```
+
+**Doctor Operations:**
+```bash
+# Search doctors by name
+curl -X GET "http://localhost:9000/api/doctors/search?name=Smith" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Get full doctor details by ID
+curl -X GET http://localhost:9000/api/doctors/123e4567-e89b-12d3-a456-426614174001 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Get minimal doctor information
+curl -X GET http://localhost:9000/api/doctors/123e4567-e89b-12d3-a456-426614174001/minimal \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Check if doctor exists
+curl -X GET http://localhost:9000/api/doctors/123e4567-e89b-12d3-a456-426614174001/exists \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ---
@@ -717,14 +784,30 @@ For questions, issues, or suggestions:
 ### v0.0.1 (Current)
 - Initial project setup
 - Core services implementation
-- Kafka integration
-- JWT authentication
-- Docker containerization
-- API documentation
+  - Auth Service (login, JWT validation)
+  - Patient Service (CRUD operations with caching)
+  - Appointment Service (scheduling with AI integration)
+  - **Doctor Service (NEW)** — Doctor management and search
+  - Analytics Service (event streaming analytics)
+  - Billing Service (bill generation via gRPC)
+  - AI Service (Gemini-powered query assistance)
+- **Auth API Enhancements (NEW)** — SignUp endpoint for user registration
+- **Doctor API Endpoints (NEW)**:
+  - Search doctor by name (full-text search)
+  - Get doctor details by ID
+  - Get minimal doctor information
+  - Check doctor existence validation
+- Kafka integration for event streaming
+- gRPC inter-service communication
+- JWT authentication and authorization
+- Docker containerization and Docker Compose orchestration
+- API documentation with Swagger/OpenAPI
+- Postman collection with comprehensive API test cases
+- Prometheus metrics and Grafana dashboards
 
 ---
 
-**Last Updated:** April 2, 2026  
+**Last Updated:** May 10, 2026  
 **Status:** 🟢 Active Development  
 **Version:** 0.0.1-SNAPSHOT
 

@@ -41,6 +41,14 @@
     {
       "key": "appointmentServiceUrl",
       "value": "http://localhost:4006"
+    },
+    {
+      "key": "doctorServiceUrl",
+      "value": "http://localhost:4008"
+    },
+    {
+      "key": "doctorId",
+      "value": "123e4567-e89b-12d3-a456-426614174001"
     }
   ],
   "item": [
@@ -100,31 +108,59 @@
           "response": []
         },
         {
-          "name": "Validate Token",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{bearerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/validate",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "validate"
-              ]
-            },
-            "description": "Validates the JWT currently stored in `bearerToken`."
-          },
-          "response": []
-        }
-      ]
-    },
+           "name": "Validate Token",
+           "request": {
+             "method": "GET",
+             "header": [
+               {
+                 "key": "Authorization",
+                 "value": "Bearer {{bearerToken}}"
+               }
+             ],
+             "url": {
+               "raw": "{{baseUrl}}/auth/validate",
+               "host": [
+                 "{{baseUrl}}"
+               ],
+               "path": [
+                 "auth",
+                 "validate"
+               ]
+             },
+             "description": "Validates the JWT currently stored in `bearerToken`."
+           },
+           "response": []
+         },
+        {
+           "name": "SignUp",
+           "request": {
+             "method": "POST",
+             "header": [
+               {
+                 "key": "Content-Type",
+                 "value": "application/json"
+               }
+             ],
+             "body": {
+               "mode": "raw",
+               "raw": "{\n  \"email\": \"newuser@test.com\",\n  \"password\": \"password123\"\n}"
+             },
+             "url": {
+               "raw": "{{baseUrl}}/auth/signup",
+               "host": [
+                 "{{baseUrl}}"
+               ],
+               "path": [
+                 "auth",
+                 "signup"
+               ]
+             },
+             "description": "Creates a new user account with the provided email and password."
+           },
+           "response": []
+         }
+       ]
+     },
     {
       "name": "Patient APIs",
       "item": [
@@ -266,105 +302,219 @@
         }
       ]
     },
-    {
-      "name": "Appointment APIs",
-      "item": [
-        {
-          "name": "Get Appointments by Date Range",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{bearerToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/appointments?from=2026-04-01T00:00:00&to=2026-04-30T23:59:59",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "appointments"
-              ],
-              "query": [
-                {
-                  "key": "from",
-                  "value": "2026-04-01T00:00:00",
-                  "description": "Start of the date-time range (ISO-8601 LocalDateTime)"
-                },
-                {
-                  "key": "to",
-                  "value": "2026-04-30T23:59:59",
-                  "description": "End of the date-time range (ISO-8601 LocalDateTime)"
-                }
-              ]
-            },
-            "description": "Returns all appointments whose start time falls within the given `from`/`to` date-time range. Both parameters are required and must be ISO-8601 LocalDateTime values (e.g. `2026-04-01T10:00:00`)."
-          },
-          "response": []
-        },
-        {
-          "name": "Create Appointment via AI (natural language)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Appointment created\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "var data = {};",
-                  "try {",
-                  "    data = pm.response.json();",
-                  "} catch (e) {",
-                  "    data = {};",
-                  "}",
-                  "",
-                  "if (data.id) {",
-                  "    pm.collectionVariables.set(\"appointmentId\", data.id);",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "text/plain"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{bearerToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "I have an appointment with Dr. Smith on 2026-05-10 at 14:00 for a routine checkup"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/appointments/ai-add/{{patientId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "appointments",
-                "ai-add",
-                "{{patientId}}"
-              ]
-            },
-            "description": "Parses a plain-text appointment description using the AI service and creates an appointment for the given patient. The body is a free-text string containing doctor name, date/time, and reason. The returned appointment `id` is automatically saved to the `appointmentId` collection variable."
-          },
-          "response": []
-        }
-      ]
-    },
+     {
+       "name": "Appointment APIs",
+       "item": [
+         {
+           "name": "Get Appointments by Date Range",
+           "request": {
+             "method": "GET",
+             "header": [
+               {
+                 "key": "Authorization",
+                 "value": "Bearer {{bearerToken}}"
+               }
+             ],
+             "url": {
+               "raw": "{{baseUrl}}/api/appointments?from=2026-04-01T00:00:00&to=2026-04-30T23:59:59",
+               "host": [
+                 "{{baseUrl}}"
+               ],
+               "path": [
+                 "api",
+                 "appointments"
+               ],
+               "query": [
+                 {
+                   "key": "from",
+                   "value": "2026-04-01T00:00:00",
+                   "description": "Start of the date-time range (ISO-8601 LocalDateTime)"
+                 },
+                 {
+                   "key": "to",
+                   "value": "2026-04-30T23:59:59",
+                   "description": "End of the date-time range (ISO-8601 LocalDateTime)"
+                 }
+               ]
+             },
+             "description": "Returns all appointments whose start time falls within the given `from`/`to` date-time range. Both parameters are required and must be ISO-8601 LocalDateTime values (e.g. `2026-04-01T10:00:00`)."
+           },
+           "response": []
+         },
+         {
+           "name": "Create Appointment via AI (natural language)",
+           "event": [
+             {
+               "listen": "test",
+               "script": {
+                 "type": "text/javascript",
+                 "exec": [
+                   "pm.test(\"Appointment created\", function () {",
+                   "    pm.response.to.have.status(200);",
+                   "});",
+                   "",
+                   "var data = {};",
+                   "try {",
+                   "    data = pm.response.json();",
+                   "} catch (e) {",
+                   "    data = {};",
+                   "}",
+                   "",
+                   "if (data.id) {",
+                   "    pm.collectionVariables.set(\"appointmentId\", data.id);",
+                   "}"
+                 ]
+               }
+             }
+           ],
+           "request": {
+             "method": "POST",
+             "header": [
+               {
+                 "key": "Content-Type",
+                 "value": "text/plain"
+               },
+               {
+                 "key": "Authorization",
+                 "value": "Bearer {{bearerToken}}"
+               }
+             ],
+             "body": {
+               "mode": "raw",
+               "raw": "I have an appointment with Dr. Smith on 2026-05-10 at 14:00 for a routine checkup"
+             },
+             "url": {
+               "raw": "{{baseUrl}}/api/appointments/ai-add/{{patientId}}",
+               "host": [
+                 "{{baseUrl}}"
+               ],
+               "path": [
+                 "api",
+                 "appointments",
+                 "ai-add",
+                 "{{patientId}}"
+               ]
+             },
+             "description": "Parses a plain-text appointment description using the AI service and creates an appointment for the given patient. The body is a free-text string containing doctor name, date/time, and reason. The returned appointment `id` is automatically saved to the `appointmentId` collection variable."
+           },
+           "response": []
+         }
+       ]
+     },
+     {
+       "name": "Doctor APIs",
+       "item": [
+         {
+           "name": "Search Doctor by Name",
+           "request": {
+             "method": "GET",
+             "header": [
+               {
+                 "key": "Authorization",
+                 "value": "Bearer {{bearerToken}}"
+               }
+             ],
+             "url": {
+               "raw": "{{baseUrl}}/api/doctors/search?name=Smith",
+               "host": [
+                 "{{baseUrl}}"
+               ],
+               "path": [
+                 "api",
+                 "doctors",
+                 "search"
+               ],
+               "query": [
+                 {
+                   "key": "name",
+                   "value": "Smith",
+                   "description": "Doctor name to search for (full-text search)"
+                 }
+               ]
+             },
+             "description": "Searches for a doctor by name using full-text search. Returns minimal doctor information including ID, name, and specialty."
+           },
+           "response": []
+         },
+         {
+           "name": "Get Doctor Details by ID",
+           "request": {
+             "method": "GET",
+             "header": [
+               {
+                 "key": "Authorization",
+                 "value": "Bearer {{bearerToken}}"
+               }
+             ],
+             "url": {
+               "raw": "{{baseUrl}}/api/doctors/{{doctorId}}",
+               "host": [
+                 "{{baseUrl}}"
+               ],
+               "path": [
+                 "api",
+                 "doctors",
+                 "{{doctorId}}"
+               ]
+             },
+             "description": "Returns full doctor details including ID, name, specialty, qualifications, and experience."
+           },
+           "response": []
+         },
+         {
+           "name": "Get Doctor Minimal Info by ID",
+           "request": {
+             "method": "GET",
+             "header": [
+               {
+                 "key": "Authorization",
+                 "value": "Bearer {{bearerToken}}"
+               }
+             ],
+             "url": {
+               "raw": "{{baseUrl}}/api/doctors/{{doctorId}}/minimal",
+               "host": [
+                 "{{baseUrl}}"
+               ],
+               "path": [
+                 "api",
+                 "doctors",
+                 "{{doctorId}}",
+                 "minimal"
+               ]
+             },
+             "description": "Returns minimal doctor information (ID, name, specialty) for a given doctor ID."
+           },
+           "response": []
+         },
+         {
+           "name": "Check if Doctor Exists",
+           "request": {
+             "method": "GET",
+             "header": [
+               {
+                 "key": "Authorization",
+                 "value": "Bearer {{bearerToken}}"
+               }
+             ],
+             "url": {
+               "raw": "{{baseUrl}}/api/doctors/{{doctorId}}/exists",
+               "host": [
+                 "{{baseUrl}}"
+               ],
+               "path": [
+                 "api",
+                 "doctors",
+                 "{{doctorId}}",
+                 "exists"
+               ]
+             },
+             "description": "Validates whether a doctor with the given ID exists. Returns a boolean value."
+           },
+           "response": []
+         }
+       ]
+     },
     {
       "name": "Direct Service Access",
       "description": "Requests that bypass the API Gateway (port 9000) and hit each microservice directly. Useful for local development and isolated service testing. No rate limiting or JWT gateway filter is applied — the services may still enforce their own auth internally.",
@@ -419,25 +569,45 @@
               },
               "response": []
             },
-            {
-              "name": "Validate Token (direct)",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{bearerToken}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{authServiceUrl}}/validate",
-                  "host": ["{{authServiceUrl}}"],
-                  "path": ["validate"]
-                },
-                "description": "Direct GET to auth-service:4005/validate. Gateway route: `/auth/**` → `auth-service:4005` (StripPrefix=1)."
-              },
-              "response": []
-            },
+             {
+               "name": "Validate Token (direct)",
+               "request": {
+                 "method": "GET",
+                 "header": [
+                   {
+                     "key": "Authorization",
+                     "value": "Bearer {{bearerToken}}"
+                   }
+                 ],
+                 "url": {
+                   "raw": "{{authServiceUrl}}/validate",
+                   "host": ["{{authServiceUrl}}"],
+                   "path": ["validate"]
+                 },
+                 "description": "Direct GET to auth-service:4005/validate. Gateway route: `/auth/**` → `auth-service:4005` (StripPrefix=1)."
+               },
+               "response": []
+             },
+             {
+               "name": "SignUp (direct)",
+               "request": {
+                 "method": "POST",
+                 "header": [
+                   {"key": "Content-Type", "value": "application/json"}
+                 ],
+                 "body": {
+                   "mode": "raw",
+                   "raw": "{\n  \"email\": \"newuser@test.com\",\n  \"password\": \"password123\"\n}"
+                 },
+                 "url": {
+                   "raw": "{{authServiceUrl}}/signup",
+                   "host": ["{{authServiceUrl}}"],
+                   "path": ["signup"]
+                 },
+                 "description": "Direct POST to auth-service:4005/signup. Gateway route: `/auth/**` → `auth-service:4005` (StripPrefix=1)."
+               },
+               "response": []
+             },
             {
               "name": "OpenAPI Doc (direct)",
               "request": {
@@ -555,76 +725,165 @@
             }
           ]
         },
-        {
-          "name": "Appointment Service (port 4006)",
-          "item": [
-            {
-              "name": "Get Appointments by Date Range (direct)",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{bearerToken}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{appointmentServiceUrl}}/appointments?from=2026-04-01T00:00:00&to=2026-04-30T23:59:59",
-                  "host": ["{{appointmentServiceUrl}}"],
-                  "path": ["appointments"],
-                  "query": [
-                    {
-                      "key": "from",
-                      "value": "2026-04-01T00:00:00",
-                      "description": "Start of the date-time range (ISO-8601 LocalDateTime)"
-                    },
-                    {
-                      "key": "to",
-                      "value": "2026-04-30T23:59:59",
-                      "description": "End of the date-time range (ISO-8601 LocalDateTime)"
-                    }
-                  ]
-                },
-                "description": "Direct GET to appointment-service:4006/appointments. Gateway route: `/api/appointments/**` → `appointment-service:4006` (StripPrefix=1, JwtValidation)."
-              },
-              "response": []
-            },
-            {
-              "name": "Create Appointment via AI (direct)",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {"key": "Content-Type", "value": "text/plain"},
-                  {"key": "Authorization", "value": "Bearer {{bearerToken}}"}
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "I have an appointment with Dr. Smith on 2026-05-10 at 14:00 for a routine checkup"
-                },
-                "url": {
-                  "raw": "{{appointmentServiceUrl}}/appointments/ai-add/{{patientId}}",
-                  "host": ["{{appointmentServiceUrl}}"],
-                  "path": ["appointments", "ai-add", "{{patientId}}"]
-                },
-                "description": "Direct POST to appointment-service:4006/appointments/ai-add/{patientId}. Gateway route: `/api/appointments/**` → `appointment-service:4006` (StripPrefix=1, JwtValidation)."
-              },
-              "response": []
-            },
-            {
-              "name": "OpenAPI Doc (direct)",
-              "request": {
-                "method": "GET",
-                "url": {
-                  "raw": "{{appointmentServiceUrl}}/v3/api-docs",
-                  "host": ["{{appointmentServiceUrl}}"],
-                  "path": ["v3", "api-docs"]
-                },
-                "description": "Direct GET to appointment-service:4006/v3/api-docs. Gateway route: `/api-docs/appointments` → `appointment-service:4006/v3/api-docs` (RewritePath)."
-              },
-              "response": []
-            }
-          ]
-        }
+         {
+           "name": "Appointment Service (port 4006)",
+           "item": [
+             {
+               "name": "Get Appointments by Date Range (direct)",
+               "request": {
+                 "method": "GET",
+                 "header": [
+                   {
+                     "key": "Authorization",
+                     "value": "Bearer {{bearerToken}}"
+                   }
+                 ],
+                 "url": {
+                   "raw": "{{appointmentServiceUrl}}/appointments?from=2026-04-01T00:00:00&to=2026-04-30T23:59:59",
+                   "host": ["{{appointmentServiceUrl}}"],
+                   "path": ["appointments"],
+                   "query": [
+                     {
+                       "key": "from",
+                       "value": "2026-04-01T00:00:00",
+                       "description": "Start of the date-time range (ISO-8601 LocalDateTime)"
+                     },
+                     {
+                       "key": "to",
+                       "value": "2026-04-30T23:59:59",
+                       "description": "End of the date-time range (ISO-8601 LocalDateTime)"
+                     }
+                   ]
+                 },
+                 "description": "Direct GET to appointment-service:4006/appointments. Gateway route: `/api/appointments/**` → `appointment-service:4006` (StripPrefix=1, JwtValidation)."
+               },
+               "response": []
+             },
+             {
+               "name": "Create Appointment via AI (direct)",
+               "request": {
+                 "method": "POST",
+                 "header": [
+                   {"key": "Content-Type", "value": "text/plain"},
+                   {"key": "Authorization", "value": "Bearer {{bearerToken}}"}
+                 ],
+                 "body": {
+                   "mode": "raw",
+                   "raw": "I have an appointment with Dr. Smith on 2026-05-10 at 14:00 for a routine checkup"
+                 },
+                 "url": {
+                   "raw": "{{appointmentServiceUrl}}/appointments/ai-add/{{patientId}}",
+                   "host": ["{{appointmentServiceUrl}}"],
+                   "path": ["appointments", "ai-add", "{{patientId}}"]
+                 },
+                 "description": "Direct POST to appointment-service:4006/appointments/ai-add/{patientId}. Gateway route: `/api/appointments/**` → `appointment-service:4006` (StripPrefix=1, JwtValidation)."
+               },
+               "response": []
+             },
+             {
+               "name": "OpenAPI Doc (direct)",
+               "request": {
+                 "method": "GET",
+                 "url": {
+                   "raw": "{{appointmentServiceUrl}}/v3/api-docs",
+                   "host": ["{{appointmentServiceUrl}}"],
+                   "path": ["v3", "api-docs"]
+                 },
+                 "description": "Direct GET to appointment-service:4006/v3/api-docs. Gateway route: `/api-docs/appointments` → `appointment-service:4006/v3/api-docs` (RewritePath)."
+               },
+               "response": []
+             }
+           ]
+         },
+         {
+           "name": "Doctor Service (port 4008)",
+           "item": [
+             {
+               "name": "Search Doctor by Name (direct)",
+               "request": {
+                 "method": "GET",
+                 "header": [
+                   {"key": "Authorization", "value": "Bearer {{bearerToken}}"}
+                 ],
+                 "url": {
+                   "raw": "{{doctorServiceUrl}}/doctors/search?name=Smith",
+                   "host": ["{{doctorServiceUrl}}"],
+                   "path": ["doctors", "search"],
+                   "query": [
+                     {
+                       "key": "name",
+                       "value": "Smith",
+                       "description": "Doctor name to search for (full-text search)"
+                     }
+                   ]
+                 },
+                 "description": "Direct GET to doctor-service:4008/doctors/search. Gateway route: `/api/doctors/**` → `doctor-service:4008` (StripPrefix=1)."
+               },
+               "response": []
+             },
+             {
+               "name": "Get Doctor Details by ID (direct)",
+               "request": {
+                 "method": "GET",
+                 "header": [
+                   {"key": "Authorization", "value": "Bearer {{bearerToken}}"}
+                 ],
+                 "url": {
+                   "raw": "{{doctorServiceUrl}}/doctors/{{doctorId}}",
+                   "host": ["{{doctorServiceUrl}}"],
+                   "path": ["doctors", "{{doctorId}}"]
+                 },
+                 "description": "Direct GET to doctor-service:4008/doctors/{id}. Gateway route: `/api/doctors/**` → `doctor-service:4008` (StripPrefix=1)."
+               },
+               "response": []
+             },
+             {
+               "name": "Get Doctor Minimal Info by ID (direct)",
+               "request": {
+                 "method": "GET",
+                 "header": [
+                   {"key": "Authorization", "value": "Bearer {{bearerToken}}"}
+                 ],
+                 "url": {
+                   "raw": "{{doctorServiceUrl}}/doctors/{{doctorId}}/minimal",
+                   "host": ["{{doctorServiceUrl}}"],
+                   "path": ["doctors", "{{doctorId}}", "minimal"]
+                 },
+                 "description": "Direct GET to doctor-service:4008/doctors/{id}/minimal. Gateway route: `/api/doctors/**` → `doctor-service:4008` (StripPrefix=1)."
+               },
+               "response": []
+             },
+             {
+               "name": "Check if Doctor Exists (direct)",
+               "request": {
+                 "method": "GET",
+                 "header": [
+                   {"key": "Authorization", "value": "Bearer {{bearerToken}}"}
+                 ],
+                 "url": {
+                   "raw": "{{doctorServiceUrl}}/doctors/{{doctorId}}/exists",
+                   "host": ["{{doctorServiceUrl}}"],
+                   "path": ["doctors", "{{doctorId}}", "exists"]
+                 },
+                 "description": "Direct GET to doctor-service:4008/doctors/{id}/exists. Gateway route: `/api/doctors/**` → `doctor-service:4008` (StripPrefix=1)."
+               },
+               "response": []
+             },
+             {
+               "name": "OpenAPI Doc (direct)",
+               "request": {
+                 "method": "GET",
+                 "url": {
+                   "raw": "{{doctorServiceUrl}}/v3/api-docs",
+                   "host": ["{{doctorServiceUrl}}"],
+                   "path": ["v3", "api-docs"]
+                 },
+                 "description": "Direct GET to doctor-service:4008/v3/api-docs. Gateway route: `/api-docs/doctors` → `doctor-service:4008/v3/api-docs` (RewritePath)."
+               },
+               "response": []
+             }
+           ]
+         }
       ]
     },
     {
@@ -666,24 +925,42 @@
           },
           "response": []
         },
-        {
-          "name": "Appointment OpenAPI Doc",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api-docs/appointments",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api-docs",
-                "appointments"
-              ]
-            },
-            "description": "Gateway route that rewrites to the appointment service OpenAPI document."
-          },
-          "response": []
-        }
+         {
+           "name": "Appointment OpenAPI Doc",
+           "request": {
+             "method": "GET",
+             "url": {
+               "raw": "{{baseUrl}}/api-docs/appointments",
+               "host": [
+                 "{{baseUrl}}"
+               ],
+               "path": [
+                 "api-docs",
+                 "appointments"
+               ]
+             },
+             "description": "Gateway route that rewrites to the appointment service OpenAPI document."
+           },
+           "response": []
+         },
+         {
+           "name": "Doctor OpenAPI Doc",
+           "request": {
+             "method": "GET",
+             "url": {
+               "raw": "{{baseUrl}}/api-docs/doctors",
+               "host": [
+                 "{{baseUrl}}"
+               ],
+               "path": [
+                 "api-docs",
+                 "doctors"
+               ]
+             },
+             "description": "Gateway route that rewrites to the doctor service OpenAPI document."
+           },
+           "response": []
+         }
       ]
     }
   ]
