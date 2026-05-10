@@ -1,15 +1,15 @@
 package com.pm.appointmentservice.service;
 
+import com.pm.appointmentservice.client.DoctorServiceClient;
 import com.pm.appointmentservice.dto.AppointmentResponseDto;
+import com.pm.appointmentservice.dto.DoctorClientDto;
 import com.pm.appointmentservice.entity.Appointment;
 import com.pm.appointmentservice.entity.CachedPatient;
-import com.pm.appointmentservice.entity.Doctor;
 import com.pm.appointmentservice.exception.DoctorNotFoundException;
 import com.pm.appointmentservice.exception.PatientNotFoundException;
 import com.pm.appointmentservice.grpc.AiServiceGrpcClient;
 import com.pm.appointmentservice.repository.AppointmentRepository;
 import com.pm.appointmentservice.repository.CachedPatientRepository;
-import com.pm.appointmentservice.repository.DoctorRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,18 +25,18 @@ public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final CachedPatientRepository cachedPatientRepository;
-    private final DoctorRepository doctorRepository;
     private final AiServiceGrpcClient aiServiceGrpcClient;
+    private final DoctorServiceClient doctorServiceClient;
 
     public AppointmentService(
             AppointmentRepository appointmentRepository,
             CachedPatientRepository cachedPatientRepository,
-            DoctorRepository doctorRepository,
-            AiServiceGrpcClient aiServiceGrpcClient) {
+            AiServiceGrpcClient aiServiceGrpcClient,
+            DoctorServiceClient doctorServiceClient) {
         this.appointmentRepository = appointmentRepository;
         this.cachedPatientRepository = cachedPatientRepository;
-        this.doctorRepository = doctorRepository;
         this.aiServiceGrpcClient = aiServiceGrpcClient;
+        this.doctorServiceClient = doctorServiceClient;
     }
 
     public List<AppointmentResponseDto> getAppointmentByDateRange(LocalDateTime from, LocalDateTime to) {
@@ -65,12 +65,14 @@ public class AppointmentService {
         AppointmentResponseDto response = aiServiceGrpcClient.parseAppointment(plainText);
         log.info("AI service returned: patientName={}, doctorName={}", response.getPatientName(), response.getDoctorName());
 
-        // Search doctor in DB by word-matching against the name extracted by AI
-        Doctor doctor = doctorRepository
-                .searchByName(response.getDoctorName())
-                .orElseThrow(() -> new DoctorNotFoundException(
-                        "Doctor not found with name: " + response.getDoctorName()));
-        log.info("Matched doctor in DB: id={}, name={}", doctor.getDoctorId(), doctor.getFullName());
+        // Search doctor via Doctor Service by word-matching against the name extracted by AI
+        log.info("Calling Doctor Service to search for doctor by name: {}", response.getDoctorName());
+        DoctorClientDto doctor = doctorServiceClient.searchDoctorByName(response.getDoctorName());
+
+        if (doctor == null) {
+            throw new DoctorNotFoundException("Doctor not found with name: " + response.getDoctorName());
+        }
+        log.info("Matched doctor from Doctor Service: id={}, name={}", doctor.getDoctorId(), doctor.getFullName());
 
         response.setDoctorId(doctor.getDoctorId());
         response.setDoctorName(doctor.getFullName());
@@ -81,6 +83,7 @@ public class AppointmentService {
         appointment.setEndTime(response.getEndTime());
         appointment.setReason(response.getReason());
         appointment.setDoctorId(doctor.getDoctorId());
+        appointment.setDoctorName(doctor.getFullName());
 
         UUID appointmentId = appointmentRepository.save(appointment).getAppointmentId();
         log.info("Appointment saved with id={}", appointmentId);

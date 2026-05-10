@@ -26,9 +26,9 @@ public class Appointment {
     @Column(name = "doctor_id")
     private UUID doctorId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "doctor_id", referencedColumnName = "doctor_id", insertable = false, updatable = false)
-    private Doctor doctor;
+    @NotNull
+    @Column(name = "doctor_name")
+    private String doctorName;
 
     @NotNull(message = "Start Time is required")
     @Column(nullable = false)
@@ -64,13 +64,6 @@ public class Appointment {
         this.doctorId = doctorId;
     }
 
-    public Doctor getDoctor() {
-        return doctor;
-    }
-
-    public void setDoctor(Doctor doctor) {
-        this.doctor = doctor;
-    }
 
     public Appointment() {
     }
@@ -132,6 +125,12 @@ public class Appointment {
         this.version = version;
     }
 
+    public String getDoctorName() {
+        return doctorName;
+    }
 
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
+    }
 }
 
