@@ -1,0 +1,25 @@
+syntax="proto3";
+
+package pm.payment.v1;
+
+option java_multiple_files=true;
+option java_package="payment";
+
+service PaymentService{
+  rpc PaymentEventSend(PaymentRequest) returns (PaymentResponse);
+}
+
+message PaymentRequest{
+  string saga_id=1;
+  string appointment_id=2;
+  string patient_name=3;
+  string amount=4;
+  string payment_method=5;
+}
+
+message PaymentResponse{
+  string txn_id=1;
+  string status=2;
+  string message=3;
+}
+

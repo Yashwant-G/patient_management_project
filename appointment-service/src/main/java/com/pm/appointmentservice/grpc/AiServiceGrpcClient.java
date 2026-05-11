@@ -12,7 +12,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Service
@@ -42,9 +44,10 @@ public class AiServiceGrpcClient {
         appointmentResponseDto.setPatientId(UUID.fromString(response.getPatientId()));
         appointmentResponseDto.setPatientName(response.getPatientName());
         appointmentResponseDto.setDoctorName(response.getDoctorName());
-        appointmentResponseDto.setStartTime(LocalDateTime.parse(response.getStartTime()));
-        appointmentResponseDto.setEndTime(LocalDateTime.parse(response.getEndTime()));
+        appointmentResponseDto.setStartTime(LocalTime.parse(response.getStartTime()));
+        appointmentResponseDto.setEndTime(LocalTime.parse(response.getEndTime()));
         appointmentResponseDto.setReason(response.getReason());
+        appointmentResponseDto.setAppointment_date(LocalDate.parse(response.getAppointmentDate()));
 
         return appointmentResponseDto;
     }

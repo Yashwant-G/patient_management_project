@@ -1,7 +1,10 @@
 package com.pm.doctorservice.entity;
 
+import jakarta.validation.constraints.NotNull;
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
@@ -21,6 +24,20 @@ public class Doctor {
 
     @Column(unique = true)
     private String email;
+
+    @NotNull
+    @Column(nullable = false)
+    private BigDecimal fees;
+
+    @NotNull
+    @Column(nullable = false)
+    private LocalTime startTime;
+
+    @NotNull
+    @Column(nullable = false)
+    private LocalTime endTime;
+
+    private Boolean isActive;
 
     public Doctor() {
     }
@@ -55,6 +72,38 @@ public class Doctor {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public BigDecimal getFees() {
+        return fees;
+    }
+
+    public void setFees(BigDecimal fees) {
+        this.fees = fees;
+    }
+
+    public LocalTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalTime endTime) {
+        this.endTime = endTime;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean active) {
+        isActive = active;
     }
 }
 

@@ -1,0 +1,36 @@
+syntax="proto3";
+
+package pm.doctor.v1;
+
+option java_multiple_files=true;
+option java_package="doctor";
+
+service DoctorService{
+    rpc DoctorEventSend(DoctorEventRequest) returns (DoctorEventResponse);
+    rpc UpdateSlotEventSend(SlotUpdateRequest) returns (SlotUpdateResponse);
+}
+
+message DoctorEventRequest{
+  string doctor_id=1;
+  string appointment_id=2;
+  string appointment_date=3;
+  string start_time=4;
+  string end_time=5;
+}
+
+message DoctorEventResponse{
+  reserved 1;
+  string fees=2;
+  string slot_id=3;
+}
+
+message SlotUpdateRequest{
+  string slot_id=1;
+  string to_status=2;
+}
+
+message SlotUpdateResponse{
+  string doctor_name=1;
+  string success=2;
+}
+

@@ -19,6 +19,7 @@ public class AppointmentMapper {
                     .setReason(node.get("reason").asText(""))
                     .setPatientName(node.get("patient_name").asText(""))
                     .setDoctorName(node.get("doctor_name").asText(""))
+                    .setAppointmentDate(node.get("appointment_date").asText(""))
                     .build();
 
         } catch (Exception e) {

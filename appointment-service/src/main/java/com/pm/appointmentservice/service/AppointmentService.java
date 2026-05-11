@@ -1,10 +1,12 @@
 package com.pm.appointmentservice.service;
 
 import com.pm.appointmentservice.client.DoctorServiceClient;
+import com.pm.appointmentservice.dto.AppointmentRequestDto;
 import com.pm.appointmentservice.dto.AppointmentResponseDto;
 import com.pm.appointmentservice.dto.DoctorClientDto;
 import com.pm.appointmentservice.entity.Appointment;
 import com.pm.appointmentservice.entity.CachedPatient;
+import com.pm.appointmentservice.entity.enums.AppointmentStatus;
 import com.pm.appointmentservice.exception.DoctorNotFoundException;
 import com.pm.appointmentservice.exception.PatientNotFoundException;
 import com.pm.appointmentservice.grpc.AiServiceGrpcClient;
@@ -27,16 +29,18 @@ public class AppointmentService {
     private final CachedPatientRepository cachedPatientRepository;
     private final AiServiceGrpcClient aiServiceGrpcClient;
     private final DoctorServiceClient doctorServiceClient;
+    private final SagaOrchestratorService sagaOrchestratorService;
 
     public AppointmentService(
             AppointmentRepository appointmentRepository,
             CachedPatientRepository cachedPatientRepository,
             AiServiceGrpcClient aiServiceGrpcClient,
-            DoctorServiceClient doctorServiceClient) {
+            DoctorServiceClient doctorServiceClient, SagaOrchestratorService sagaOrchestratorService) {
         this.appointmentRepository = appointmentRepository;
         this.cachedPatientRepository = cachedPatientRepository;
         this.aiServiceGrpcClient = aiServiceGrpcClient;
         this.doctorServiceClient = doctorServiceClient;
+        this.sagaOrchestratorService = sagaOrchestratorService;
     }
 
     public List<AppointmentResponseDto> getAppointmentByDateRange(LocalDateTime from, LocalDateTime to) {
@@ -74,10 +78,11 @@ public class AppointmentService {
         }
         log.info("Matched doctor from Doctor Service: id={}, name={}", doctor.getDoctorId(), doctor.getFullName());
 
-        response.setDoctorId(doctor.getDoctorId());
+//        response.setDoctorId(doctor.getDoctorId());
         response.setDoctorName(doctor.getFullName());
 
         Appointment appointment = new Appointment();
+        appointment.setRequestId(UUID.randomUUID());
         appointment.setPatientId(response.getPatientId());
         appointment.setStartTime(response.getStartTime());
         appointment.setEndTime(response.getEndTime());
@@ -85,11 +90,52 @@ public class AppointmentService {
         appointment.setDoctorId(doctor.getDoctorId());
         appointment.setDoctorName(doctor.getFullName());
 
+        // Set remaining attributes
+        appointment.setAppointmentDate(response.getAppointment_date());
+        appointment.setSagaId(UUID.randomUUID());
+        appointment.setSlotId(null); // Will be set during saga flow
+        appointment.setAmount(java.math.BigDecimal.ZERO); // Default amount
+        appointment.setPaymentMethod(null); // Will be set during booking
+        appointment.setTxnId(null); // Will be set after payment
+        appointment.setAppointmentStatus(AppointmentStatus.CONFIRMED);
+
         UUID appointmentId = appointmentRepository.save(appointment).getAppointmentId();
         log.info("Appointment saved with id={}", appointmentId);
 
         response.setId(appointmentId);
+        response.setStatus("Ai-Appointment Successfully Booked");
 
         return response;
+    }
+
+
+    public AppointmentResponseDto bookAppointment(AppointmentRequestDto appointmentRequestDto){
+        log.info("Booking flow initiated - requestId={}, patientId={}, doctorId={}",
+                appointmentRequestDto.getRequestId(),
+                appointmentRequestDto.getPatientId(),
+                appointmentRequestDto.getDoctorId());
+
+        CachedPatient patient = cachedPatientRepository.findById(appointmentRequestDto.getPatientId())
+                .orElseThrow(() -> new PatientNotFoundException("Patient not found with id: " + appointmentRequestDto.getPatientId()));
+        log.debug("Patient validated: name={}", patient.getFullName());
+
+        if(appointmentRepository.existsByRequestId(appointmentRequestDto.getRequestId())){
+            log.warn("Duplicate booking attempt detected for requestId={}", appointmentRequestDto.getRequestId());
+            throw new RuntimeException("Appointment already exists for this request id");
+        }
+
+        Appointment appointment=new Appointment();
+        appointment.setRequestId(appointmentRequestDto.getRequestId());
+        appointment.setPatientId(patient.getId());
+        appointment.setCachedPatient(patient);
+        appointment.setDoctorId(appointmentRequestDto.getDoctorId());
+        appointment.setAppointmentDate(appointmentRequestDto.getAppointment_date());
+        appointment.setStartTime(appointmentRequestDto.getStartTime());
+        appointment.setEndTime(appointmentRequestDto.getEndTime());
+        appointment.setReason(appointmentRequestDto.getReason());
+        appointment.setPaymentMethod(appointmentRequestDto.getPaymentMethod());
+
+        log.info("Initiating saga orchestration for requestId={}", appointmentRequestDto.getRequestId());
+        return sagaOrchestratorService.startSaga(appointment);
     }
 }

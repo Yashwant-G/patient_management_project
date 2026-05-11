@@ -1,30 +1,41 @@
 package com.pm.appointmentservice.dto;
 
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import com.pm.appointmentservice.entity.enums.PaymentMethod;
+import jakarta.validation.constraints.*;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 public class AppointmentRequestDto {
 
+    @NotNull(message = "requestId is required")
+    private UUID requestId;
+
     @NotNull(message = "patientId is required")
     private UUID patientId;
 
+    @NotNull(message = "doctorId is required")
+    private UUID doctorId;
+
+    @FutureOrPresent
+    @NotNull(message = "appointment_date is required")
+    private LocalDate appointment_date;
+
     @NotNull(message = "startTime is required")
-    @Future(message = "startTime must be in the future")
-    private LocalDateTime startTime;
+    private LocalTime startTime;
 
     @NotNull(message = "endTime is required")
-    @Future(message = "endTime must be in the future")
-    private LocalDateTime endTime;
+    private LocalTime endTime;
 
     @NotBlank(message = "reason is required")
     @Size(max = 255, message = "reason must be 255 characters or less")
     private String reason;
+
+    @NotNull(message = "paymentMethod is required")
+    private PaymentMethod paymentMethod;
 
     // 👇 Optional, if not sent, defaults to 0
     private Long version = 0L;
@@ -32,7 +43,7 @@ public class AppointmentRequestDto {
     public AppointmentRequestDto() {
     }
 
-    public AppointmentRequestDto(UUID patientId, LocalDateTime startTime, LocalDateTime endTime, String reason, Instant updatedAt) {
+    public AppointmentRequestDto(UUID patientId, LocalTime startTime, LocalTime endTime, String reason, Instant updatedAt) {
         this.patientId = patientId;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -47,19 +58,19 @@ public class AppointmentRequestDto {
         this.patientId = patientId;
     }
 
-    public LocalDateTime getStartTime() {
+    public LocalTime getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(LocalDateTime startTime) {
+    public void setStartTime(LocalTime startTime) {
         this.startTime = startTime;
     }
 
-    public LocalDateTime getEndTime() {
+    public LocalTime getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(LocalDateTime endTime) {
+    public void setEndTime(LocalTime endTime) {
         this.endTime = endTime;
     }
 
@@ -77,5 +88,45 @@ public class AppointmentRequestDto {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public UUID getDoctorId() {
+        return doctorId;
+    }
+
+    public void setDoctorId(UUID doctorId) {
+        this.doctorId = doctorId;
+    }
+
+    public LocalDate getAppointment_date() {
+        return appointment_date;
+    }
+
+    public void setAppointment_date(LocalDate appointment_date) {
+        this.appointment_date = appointment_date;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    @AssertTrue(message = "endTime must be after startTime")
+    public boolean isEndTimeAfterStartTime() {
+        if (startTime == null || endTime == null) {
+            return true;
+        }
+        return endTime.isAfter(startTime);
+    }
+
+    public UUID getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(UUID requestId) {
+        this.requestId = requestId;
     }
 }

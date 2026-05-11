@@ -1,6 +1,8 @@
 package com.pm.appointmentservice.dto;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 public class AppointmentResponseDto {
@@ -8,10 +10,11 @@ public class AppointmentResponseDto {
     private UUID id;
     private UUID patientId;
     private String patientName;
-    private UUID doctorId;
     private String doctorName;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private LocalDate appointment_date;
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private String status;
     private String reason;
     private Long version; // ➡️ Added version for optimistic locking
 
@@ -20,15 +23,27 @@ public class AppointmentResponseDto {
     }
 
     public AppointmentResponseDto(UUID id, UUID patientId, String patientName,
-                                  UUID doctorId, String doctorName,
-                                  LocalDateTime startTime, LocalDateTime endTime, String reason, Long version) {
+                                  String doctorName,
+                                  LocalTime startTime, LocalTime endTime, String reason, Long version) {
         this.id = id;
         this.patientId = patientId;
         this.patientName = patientName;
-        this.doctorId = doctorId;
         this.doctorName = doctorName;
         this.startTime = startTime;
         this.endTime = endTime;
+        this.reason = reason;
+        this.version = version;
+    }
+
+    public AppointmentResponseDto(UUID id, UUID patientId, String patientName, String doctorName, LocalDate appointment_date, LocalTime startTime, LocalTime endTime, String status, String reason, Long version) {
+        this.id = id;
+        this.patientId = patientId;
+        this.patientName = patientName;
+        this.doctorName = doctorName;
+        this.appointment_date = appointment_date;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.status = status;
         this.reason = reason;
         this.version = version;
     }
@@ -57,14 +72,6 @@ public class AppointmentResponseDto {
         this.patientName = patientName;
     }
 
-    public UUID getDoctorId() {
-        return doctorId;
-    }
-
-    public void setDoctorId(UUID doctorId) {
-        this.doctorId = doctorId;
-    }
-
     public String getDoctorName() {
         return doctorName;
     }
@@ -73,19 +80,19 @@ public class AppointmentResponseDto {
         this.doctorName = doctorName;
     }
 
-    public LocalDateTime getStartTime() {
+    public LocalTime getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(LocalDateTime startTime) {
+    public void setStartTime(LocalTime startTime) {
         this.startTime = startTime;
     }
 
-    public LocalDateTime getEndTime() {
+    public LocalTime getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(LocalDateTime endTime) {
+    public void setEndTime(LocalTime endTime) {
         this.endTime = endTime;
     }
 
@@ -103,5 +110,21 @@ public class AppointmentResponseDto {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public LocalDate getAppointment_date() {
+        return appointment_date;
+    }
+
+    public void setAppointment_date(LocalDate appointment_date) {
+        this.appointment_date = appointment_date;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

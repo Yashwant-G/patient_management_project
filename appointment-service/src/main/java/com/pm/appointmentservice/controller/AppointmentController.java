@@ -1,9 +1,11 @@
 package com.pm.appointmentservice.controller;
 
+import com.pm.appointmentservice.dto.AppointmentRequestDto;
 import com.pm.appointmentservice.dto.AppointmentResponseDto;
 import com.pm.appointmentservice.service.AppointmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -40,5 +42,22 @@ public class AppointmentController {
         AppointmentResponseDto responseDto=appointmentService.AiAddAppointment(text,id);
         log.info("AI appointment created: id={}", responseDto.getId());
         return ResponseEntity.ok().body(responseDto);
+    }
+
+    @Operation(summary = "Create appointment from Saga Pattern")
+    @PostMapping( "/book")
+    public ResponseEntity<AppointmentResponseDto> bookAppointment(@Valid @RequestBody AppointmentRequestDto appointmentRequestDto){
+        UUID requestId = appointmentRequestDto.getRequestId();
+        log.info("POST /appointments/book - requestId={}, patientId={}", requestId, appointmentRequestDto.getPatientId());
+
+        try {
+            AppointmentResponseDto appointmentResponseDto = appointmentService.bookAppointment(appointmentRequestDto);
+            log.info("Booking completed - requestId={}, appointmentId={}, status={}",
+                    requestId, appointmentResponseDto.getId(), appointmentResponseDto.getStatus());
+            return ResponseEntity.ok().body(appointmentResponseDto);
+        } catch (Exception e) {
+            log.error("Booking failed - requestId={}, error={}", requestId, e.getMessage());
+            throw e;
+        }
     }
 }

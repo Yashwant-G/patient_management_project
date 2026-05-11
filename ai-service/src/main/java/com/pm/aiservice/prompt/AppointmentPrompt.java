@@ -25,6 +25,7 @@ public class AppointmentPrompt {
           "patient_id": "",
           "start_time": "",
           "end_time": "",
+          "appointment_date": "",
           "reason": "",
           "patient_name": "",
           "doctor_name": ""

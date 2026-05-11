@@ -5,6 +5,8 @@ import com.pm.doctorservice.dto.DoctorSearchDto;
 import com.pm.doctorservice.entity.Doctor;
 import com.pm.doctorservice.exception.DoctorNotFoundException;
 import com.pm.doctorservice.repository.DoctorRepository;
+import doctor.DoctorEventRequest;
+import doctor.DoctorEventResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,9 +19,11 @@ public class DoctorService {
     private static final Logger log = LoggerFactory.getLogger(DoctorService.class);
 
     private final DoctorRepository doctorRepository;
+    private final SlotsService slotsService;
 
-    public DoctorService(DoctorRepository doctorRepository) {
+    public DoctorService(DoctorRepository doctorRepository, SlotsService slotsService) {
         this.doctorRepository = doctorRepository;
+        this.slotsService = slotsService;
     }
 
     /**
@@ -53,22 +57,22 @@ public class DoctorService {
                 .orElseThrow(() -> new DoctorNotFoundException("Doctor not found with id: " + doctorId));
         return new DoctorSearchDto(doctor.getDoctorId(), doctor.getFullName());
     }
-
-    /**
-     * Check if doctor exists
-     */
-    public boolean exists(UUID doctorId) {
+    public Boolean exists(UUID doctorId) {
         return doctorRepository.existsById(doctorId);
     }
 
-    /**
-     * Validate doctor exists and return minimal info
-     */
-    public DoctorSearchDto validateAndGetDoctor(UUID doctorId) {
-        log.info("Validating doctor exists: id={}", doctorId);
-        Doctor doctor = doctorRepository.findById(doctorId)
-                .orElseThrow(() -> new DoctorNotFoundException("Doctor not found with id: " + doctorId));
-        return new DoctorSearchDto(doctor.getDoctorId(), doctor.getFullName());
+    public DoctorEventResponse validateDoctorEvent(DoctorEventRequest request){
+        //validate doctor
+        Doctor doctor = doctorRepository.findById(UUID.fromString(request.getDoctorId()))
+                .orElseThrow(() -> new DoctorNotFoundException("Doctor not found with id: " + request.getDoctorId()));
+
+        //Validate Slots
+        UUID slotId=slotsService.validateAppointmentSlot(request,doctor);
+
+        return DoctorEventResponse.newBuilder()
+                .setSlotId(slotId.toString())
+                .setFees(doctor.getFees().toString())
+                .build();
     }
 
     private DoctorResponseDto mapToResponseDto(Doctor doctor) {

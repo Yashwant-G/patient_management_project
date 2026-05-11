@@ -14,9 +14,9 @@ FROM eclipse-temurin:21-jre as runner
 
 WORKDIR /app
 
-COPY --from=builder ./app/target/doctor-service-0.0.1-SNAPSHOT.jar ./app.jar
+COPY --from=builder ./app/target/payment-service-0.0.1-SNAPSHOT.jar ./app.jar
 
-EXPOSE 4008
-EXPOSE 9003
+EXPOSE 4009
+EXPOSE 9004
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -18,7 +18,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
             a.appointmentId,
             a.patientId,
             cp.fullName,
-            a.doctorId,
             a.doctorName,
             a.startTime,
             a.endTime,
@@ -30,4 +29,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
             WHERE a.startTime BETWEEN :from AND :to
             """)
     List<AppointmentResponseDto> findByStartTimeBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    Boolean existsByRequestId(UUID requestId);
 }
