@@ -88,4 +88,17 @@ public class SlotsService {
                 .build();
     }
 
+    @Transactional
+    public void CleanUpExpiredSlotsService(){
+        try{
+            LocalDateTime now=LocalDateTime.now();
+            log.info("Attempting deleting slots with expiry before now: {}",now );
+            Long rows=slotsRepository.deleteAllByExpiresAtBeforeAndStatus(now, SlotStatus.HELD);
+            log.info("Successfully cleaned up {} rows of HELD slots", rows);
+        } catch (Exception e){
+            log.error("Error while cleaning up expired slots", e);
+            throw new RuntimeException(e);
+        }
+    }
+
 }

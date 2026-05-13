@@ -10,6 +10,7 @@ A comprehensive microservices-based patient management platform built with Sprin
 - [Architecture](#architecture)
 - [Services](#services)
 - [Tech Stack](#tech-stack)
+- [Ports and URLs](#ports-and-urls)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
@@ -299,6 +300,24 @@ The Patient Management System is an enterprise-grade microservices platform desi
 
 ---
 
+## 🔌 Ports and URLs
+
+For a comprehensive reference of all service ports, gRPC ports, database URLs, Docker internal hosts, and Swagger documentation endpoints, see the dedicated **[PortsAndUrl.md](PortsAndUrl.md)** documentation.
+
+**Quick Reference:**
+- **API Gateway:** `http://localhost:9000`
+- **Auth Service:** `http://localhost:4005`
+- **Patient Service:** `http://localhost:4000`
+- **Appointment Service:** `http://localhost:4006`
+- **Doctor Service:** `http://localhost:4008` (gRPC: 9003)
+- **AI Service:** `http://localhost:4007` (gRPC: 9002)
+- **Billing Service:** Port 4001 (gRPC: 9001)
+- **Payment Service:** Port 4009 (gRPC: 9004)
+- **Prometheus:** `http://localhost:9090`
+- **Grafana:** `http://localhost:3000`
+
+---
+
 ## 📋 Prerequisites
 
 Before you begin, ensure you have the following installed:
@@ -525,8 +544,7 @@ curl -X POST http://localhost:9000/auth/login \
 
 # Response: JWT Token
 {
-  "token": "eyJhbGc...",
-  "expires": 86400000
+  "token": "eyJhbGc..."
 }
 ```
 
@@ -541,10 +559,6 @@ curl -X POST http://localhost:9000/api/patients \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{"name":"John Doe","email":"john@example.com","address":"123 Main St","dateOfBirth":"1990-01-01","registeredDate":"2026-05-10"}'
-
-# Get patient by ID
-curl -X GET http://localhost:9000/api/patients/123e4567-e89b-12d3-a456-426614174000 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
 # Update patient
 curl -X PUT http://localhost:9000/api/patients/123e4567-e89b-12d3-a456-426614174000 \
@@ -568,6 +582,12 @@ curl -X POST http://localhost:9000/api/appointments/ai-add/123e4567-e89b-12d3-a4
   -H "Content-Type: text/plain" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d "I have an appointment with Dr. Smith on 2026-05-15 at 14:00 for a routine checkup"
+
+# Book appointment via saga flow
+curl -X POST http://localhost:9000/api/appointments/book \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"requestId":"123e4567-e89b-12d3-a456-426614174100","patientId":"123e4567-e89b-12d3-a456-426614174000","doctorId":"123e4567-e89b-12d3-a456-426614174001","appointment_date":"2026-05-20","startTime":"10:00:00","endTime":"10:30:00","reason":"Follow-up","paymentMethod":"UPI","version":0}'
 ```
 
 **Doctor Operations:**
@@ -798,17 +818,21 @@ For questions, issues, or suggestions:
   - Get minimal doctor information
   - Check doctor existence validation
 - Kafka integration for event streaming
-- gRPC inter-service communication
+- gRPC inter-service communication with comprehensive exception handling
 - JWT authentication and authorization
 - Docker containerization and Docker Compose orchestration
 - API documentation with Swagger/OpenAPI
 - Postman collection with comprehensive API test cases
 - Prometheus metrics and Grafana dashboards
+- **Enhancements v0.0.2 (May 13, 2026)**:
+  - ✅ **gRPC Exception Handling** — Added StatusRuntimeException handling to AiServiceGrpcClient, DoctorServiceGrpcClient, PaymentServiceGrpcClient
+  - ✅ **Enhanced Logging** — Added operational logs at key stages: request received, gRPC call start/end, DB save/update, payment success/failure, saga step transitions, exception handling
+  - ✅ **PortsAndUrl.md Documentation** — Comprehensive reference for all service ports, gRPC endpoints, database URLs, Docker internal hosts, and monitoring URLs
+  - ✅ **Improved Error Messages** — Better downstream service unavailability detection and reporting
+  - ✅ **Code Quality** — Production-oriented exception handling and detailed operational logging throughout the codebase
 
 ---
 
-**Last Updated:** May 10, 2026  
+**Last Updated:** May 13, 2026  
 **Status:** 🟢 Active Development  
 **Version:** 0.0.1-SNAPSHOT
-
-

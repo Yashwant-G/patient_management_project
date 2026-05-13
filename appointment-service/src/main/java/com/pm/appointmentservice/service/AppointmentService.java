@@ -16,8 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -43,14 +44,15 @@ public class AppointmentService {
         this.sagaOrchestratorService = sagaOrchestratorService;
     }
 
-    public List<AppointmentResponseDto> getAppointmentByDateRange(LocalDateTime from, LocalDateTime to) {
+    public List<AppointmentResponseDto> getAppointmentByDateRange(LocalDate from, LocalDate to) {
         log.info("Fetching appointments between {} and {}", from, to);
-        return appointmentRepository.findByStartTimeBetween(from, to);
+        return appointmentRepository.findByAppointmentDateBetween(from, to);
     }
 
     public void syncCachedPatientTable(CachedPatient cachedPatient) {
         log.info("Syncing cached patient: id={}, name={}", cachedPatient.getId(), cachedPatient.getFullName());
         cachedPatientRepository.save(cachedPatient);
+        log.info("Cached patient saved/updated in DB: id={}", cachedPatient.getId());
     }
 
     public AppointmentResponseDto AiAddAppointment(String plainText, UUID patientId) {
@@ -74,6 +76,7 @@ public class AppointmentService {
         DoctorClientDto doctor = doctorServiceClient.searchDoctorByName(response.getDoctorName());
 
         if (doctor == null) {
+            log.error("Doctor not found with name: {}", response.getDoctorName());
             throw new DoctorNotFoundException("Doctor not found with name: " + response.getDoctorName());
         }
         log.info("Matched doctor from Doctor Service: id={}, name={}", doctor.getDoctorId(), doctor.getFullName());
@@ -91,7 +94,7 @@ public class AppointmentService {
         appointment.setDoctorName(doctor.getFullName());
 
         // Set remaining attributes
-        appointment.setAppointmentDate(response.getAppointment_date());
+        appointment.setAppointmentDate(response.getAppointmentDate());
         appointment.setSagaId(UUID.randomUUID());
         appointment.setSlotId(null); // Will be set during saga flow
         appointment.setAmount(java.math.BigDecimal.ZERO); // Default amount
@@ -99,6 +102,7 @@ public class AppointmentService {
         appointment.setTxnId(null); // Will be set after payment
         appointment.setAppointmentStatus(AppointmentStatus.CONFIRMED);
 
+        log.info("Saving AI appointment to database - patientId={}, doctorId={}", response.getPatientId(), doctor.getDoctorId());
         UUID appointmentId = appointmentRepository.save(appointment).getAppointmentId();
         log.info("Appointment saved with id={}", appointmentId);
 
@@ -121,7 +125,16 @@ public class AppointmentService {
 
         if(appointmentRepository.existsByRequestId(appointmentRequestDto.getRequestId())){
             log.warn("Duplicate booking attempt detected for requestId={}", appointmentRequestDto.getRequestId());
-            throw new RuntimeException("Appointment already exists for this request id");
+            throw new RuntimeException("Appointment already exists for this request id: "+appointmentRequestDto.getRequestId());
+        }
+
+        Optional<AppointmentStatus> appointmentExist=appointmentRepository.findExistingAppointment(
+                appointmentRequestDto.getPatientId(),
+                appointmentRequestDto.getAppointment_date(),
+                appointmentRequestDto.getStartTime());
+        if(appointmentExist.isPresent()){
+            log.warn("Appointment already exists with Status: ={}", appointmentExist.get());
+            throw new RuntimeException("Appointment already exists with status: "+appointmentExist.get());
         }
 
         Appointment appointment=new Appointment();

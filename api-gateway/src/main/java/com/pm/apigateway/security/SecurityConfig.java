@@ -7,6 +7,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -21,16 +22,19 @@ import java.util.Base64;
 import io.jsonwebtoken.security.Keys;
 
 @Configuration
-@EnableWebFluxSecurity
+@EnableWebFluxSecurity //WebFlux vs Web, webflux is for reactive, non-blocking
 public class SecurityConfig {
 
     @Bean
     public ReactiveJwtDecoder reactiveJwtDecoder(@Value("${jwt.secret}") String base64Secret) {
         byte[] keyBytes = Base64.getDecoder().decode(base64Secret.getBytes(StandardCharsets.UTF_8));
         SecretKey key = Keys.hmacShaKeyFor(keyBytes);
-        return NimbusReactiveJwtDecoder.withSecretKey(key).build();
+        return NimbusReactiveJwtDecoder.withSecretKey(key)
+                .macAlgorithm(MacAlgorithm.HS256)
+                .build();
     }
 
+    //Separate bean to skip all type of authentication for /auth/** even if token is present int the request
     @Bean
     @Order(1)
     public SecurityWebFilterChain authPublicChain(ServerHttpSecurity http) {

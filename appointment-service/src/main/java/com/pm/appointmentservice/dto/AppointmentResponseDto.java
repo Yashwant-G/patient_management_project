@@ -1,7 +1,6 @@
 package com.pm.appointmentservice.dto;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -11,7 +10,7 @@ public class AppointmentResponseDto {
     private UUID patientId;
     private String patientName;
     private String doctorName;
-    private LocalDate appointment_date;
+    private LocalDate appointmentDate;
     private LocalTime startTime;
     private LocalTime endTime;
     private String status;
@@ -23,24 +22,25 @@ public class AppointmentResponseDto {
     }
 
     public AppointmentResponseDto(UUID id, UUID patientId, String patientName,
-                                  String doctorName,
+                                  String doctorName, LocalDate appointmentDate,
                                   LocalTime startTime, LocalTime endTime, String reason, Long version) {
         this.id = id;
         this.patientId = patientId;
         this.patientName = patientName;
         this.doctorName = doctorName;
+        this.appointmentDate = appointmentDate;
         this.startTime = startTime;
         this.endTime = endTime;
         this.reason = reason;
         this.version = version;
     }
 
-    public AppointmentResponseDto(UUID id, UUID patientId, String patientName, String doctorName, LocalDate appointment_date, LocalTime startTime, LocalTime endTime, String status, String reason, Long version) {
+    public AppointmentResponseDto(UUID id, UUID patientId, String patientName, String doctorName, LocalDate appointmentDate, LocalTime startTime, LocalTime endTime, String status, String reason, Long version) {
         this.id = id;
         this.patientId = patientId;
         this.patientName = patientName;
         this.doctorName = doctorName;
-        this.appointment_date = appointment_date;
+        this.appointmentDate = appointmentDate;
         this.startTime = startTime;
         this.endTime = endTime;
         this.status = status;
@@ -112,12 +112,12 @@ public class AppointmentResponseDto {
         this.version = version;
     }
 
-    public LocalDate getAppointment_date() {
-        return appointment_date;
+    public LocalDate getAppointmentDate() {
+        return appointmentDate;
     }
 
-    public void setAppointment_date(LocalDate appointment_date) {
-        this.appointment_date = appointment_date;
+    public void setAppointmentDate(LocalDate appointmentDate) {
+        this.appointmentDate = appointmentDate;
     }
 
     public String getStatus() {

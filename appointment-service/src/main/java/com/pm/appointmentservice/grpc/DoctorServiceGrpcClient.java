@@ -7,6 +7,8 @@ import doctor.SlotUpdateRequest;
 import doctor.SlotUpdateResponse;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,36 +29,62 @@ public class DoctorServiceGrpcClient {
 
     public DoctorEventResponse checkSlotAvailability(String doctorId, String appointmentId, String appointmentDate,
                                                       String startTime, String endTime) {
-        log.info("Sending Doctor service request for doctor_id: {}, appointment_id: {}", doctorId, appointmentId);
+        log.info("Starting Doctor service gRPC call to check slot availability for doctor_id: {}", doctorId);
+        try {
+            log.info("Sending Doctor service request for doctor_id: {}, appointment_id: {}", doctorId, appointmentId);
 
-        DoctorEventRequest request = DoctorEventRequest
-                .newBuilder()
-                .setDoctorId(doctorId)
-                .setAppointmentId(appointmentId)
-                .setAppointmentDate(appointmentDate)
-                .setStartTime(startTime)
-                .setEndTime(endTime)
-                .build();
+            DoctorEventRequest request = DoctorEventRequest
+                    .newBuilder()
+                    .setDoctorId(doctorId)
+                    .setAppointmentId(appointmentId)
+                    .setAppointmentDate(appointmentDate)
+                    .setStartTime(startTime)
+                    .setEndTime(endTime)
+                    .build();
 
-        DoctorEventResponse response = blockingStub.doctorEventSend(request);
-        log.info("Received Doctor response: {}", response.toString());
+            DoctorEventResponse response = blockingStub.doctorEventSend(request);
+            log.info("Received Doctor response successfully: {}", response.toString());
+            log.info("Doctor service gRPC call completed");
 
-        return response;
+            return response;
+        } catch (StatusRuntimeException e) {
+            log.error("Doctor service gRPC call failed with status: {}, message: {}", e.getStatus().getCode(), e.getMessage());
+            if (e.getStatus().getCode() == Status.Code.UNAVAILABLE) {
+                log.error("Doctor service is unavailable at configured endpoint. Please verify Doctor gRPC server health/connectivity.");
+            }
+            throw new RuntimeException("Failed to check slot availability from Doctor service: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error during Doctor service gRPC call: {}", e.getMessage(), e);
+            throw new RuntimeException("Doctor service gRPC call failed: " + e.getMessage(), e);
+        }
     }
 
     public SlotUpdateResponse updateSlotStatus(String slotId, String status) {
-        log.info("Sending slot update request for slot_id: {}, status: {}", slotId, status);
+        log.info("Starting Doctor service gRPC call to update slot status for slot_id: {}", slotId);
+        try {
+            log.info("Sending slot update request for slot_id: {}, status: {}", slotId, status);
 
-        SlotUpdateRequest request = SlotUpdateRequest
-                .newBuilder()
-                .setSlotId(slotId)
-                .setToStatus(status)
-                .build();
+            SlotUpdateRequest request = SlotUpdateRequest
+                    .newBuilder()
+                    .setSlotId(slotId)
+                    .setToStatus(status)
+                    .build();
 
-        SlotUpdateResponse response = blockingStub.updateSlotEventSend(request);
-        log.info("Received slot update response: {}", response.toString());
+            SlotUpdateResponse response = blockingStub.updateSlotEventSend(request);
+            log.info("Received slot update response successfully: {}", response.toString());
+            log.info("Slot update gRPC call completed");
 
-        return response;
+            return response;
+        } catch (StatusRuntimeException e) {
+            log.error("Doctor service slot update gRPC call failed with status: {}, message: {}", e.getStatus().getCode(), e.getMessage());
+            if (e.getStatus().getCode() == Status.Code.UNAVAILABLE) {
+                log.error("Doctor service is unavailable at configured endpoint. Please verify Doctor gRPC server health/connectivity.");
+            }
+            throw new RuntimeException("Failed to update slot status from Doctor service: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Unexpected error during Doctor service slot update gRPC call: {}", e.getMessage(), e);
+            throw new RuntimeException("Doctor service slot update gRPC call failed: " + e.getMessage(), e);
+        }
     }
 }
 

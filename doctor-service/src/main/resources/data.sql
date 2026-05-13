@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS doctor (
 CREATE INDEX IF NOT EXISTS doctor_full_name_fts_idx
     ON doctor
     USING GIN (to_tsvector('english', full_name));
+-- Eg: Dr. Emily Carter converts into ["Dr.", "Emily", "Carter"] and can be searchable by any indexPosition
 
 -- Insert sample doctors if not already present
 INSERT INTO doctor (doctor_id, full_name, specialization, email, fees, start_time, end_time, is_active)
@@ -82,4 +83,61 @@ SELECT
     0,
     NOW() + INTERVAL '30 minutes'
 WHERE NOT EXISTS (SELECT 1 FROM slots WHERE slot_id = '99999999-0000-0000-0000-000000000002');
+
+-- Insert demo HELD status slots (some expired, some valid)
+-- Expired HELD slot - should be cleaned up by scheduler
+INSERT INTO slots (slot_id, appointment_id, doctor_id, slot_date, start_time, end_time, status, version, expires_at)
+SELECT
+    '99999999-0000-0000-0000-000000000010',
+    'bbbbbbbb-0000-0000-0000-000000000001',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    '2026-05-15',
+    '11:00:00',
+    '11:30:00',
+    'HELD',
+    0,
+    NOW() - INTERVAL '10 minutes'
+WHERE NOT EXISTS (SELECT 1 FROM slots WHERE slot_id = '99999999-0000-0000-0000-000000000010');
+
+-- Expired HELD slot - should be cleaned up by scheduler
+INSERT INTO slots (slot_id, appointment_id, doctor_id, slot_date, start_time, end_time, status, version, expires_at)
+SELECT
+    '99999999-0000-0000-0000-000000000011',
+    'cccccccc-0000-0000-0000-000000000001',
+    'cccccccc-cccc-cccc-cccc-cccccccccccc',
+    '2026-05-16',
+    '13:00:00',
+    '13:30:00',
+    'HELD',
+    0,
+    NOW() - INTERVAL '5 minutes'
+WHERE NOT EXISTS (SELECT 1 FROM slots WHERE slot_id = '99999999-0000-0000-0000-000000000011');
+
+-- Valid HELD slot - should NOT be cleaned up
+INSERT INTO slots (slot_id, appointment_id, doctor_id, slot_date, start_time, end_time, status, version, expires_at)
+SELECT
+    '99999999-0000-0000-0000-000000000012',
+    'dddddddd-0000-0000-0000-000000000001',
+    'dddddddd-dddd-dddd-dddd-dddddddddddd',
+    '2026-05-18',
+    '12:00:00',
+    '12:30:00',
+    'HELD',
+    0,
+    NOW() + INTERVAL '45 minutes'
+WHERE NOT EXISTS (SELECT 1 FROM slots WHERE slot_id = '99999999-0000-0000-0000-000000000012');
+
+-- Valid HELD slot - should NOT be cleaned up
+INSERT INTO slots (slot_id, appointment_id, doctor_id, slot_date, start_time, end_time, status, version, expires_at)
+SELECT
+    '99999999-0000-0000-0000-000000000013',
+    'eeeeeeee-0000-0000-0000-000000000001',
+    'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+    '2026-05-19',
+    '09:30:00',
+    '10:00:00',
+    'HELD',
+    0,
+    NOW() - INTERVAL '2 minutes'
+WHERE NOT EXISTS (SELECT 1 FROM slots WHERE slot_id = '99999999-0000-0000-0000-000000000013');
 

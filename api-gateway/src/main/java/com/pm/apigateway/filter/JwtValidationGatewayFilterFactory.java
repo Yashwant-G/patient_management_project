@@ -20,7 +20,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Base64;
 
-@Component
+
+//No usage now
+//@Component
 public class JwtValidationGatewayFilterFactory extends AbstractGatewayFilterFactory<Object> {
 
     private static final Logger log = LoggerFactory.getLogger(JwtValidationGatewayFilterFactory.class);

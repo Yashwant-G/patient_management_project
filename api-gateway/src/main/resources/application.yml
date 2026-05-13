@@ -1,16 +1,21 @@
 server:
   port: 9000 # Gateway listens to this port
 
+jwt:
+  secret: ${JWT_SECRET:bXktcGF0aWVudC1tYW5hZ2VtZW50LXN5c3RlbS1qd3Qtc2VjcmV0LWtleS0yMDI2}
+
 spring:
   data:
     redis:
-      host: ${REDIS_HOST:redis}
+      host: ${REDIS_HOST:redis} #for rate limiting
       port: 6379
   cloud:
     gateway:
       default-filters:
         - name: RequestRateLimiter
           args:
+            #uses token bucket algorithm, burstCapacity means, how many requests/secs are allowed
+            #replishRate, once burstCapacity is reached, after 1 sec, bucket refills 5 tokens=5requests more
             redis-rate-limiter.burstCapacity: 5
             redis-rate-limiter.replenishRate: 5
             key-resolver: "#{@ipKeyResolver}"
@@ -20,7 +25,7 @@ spring:
           predicates:
             - Path=/auth/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=1 #Will remove auth from /auth/** to make http://auth-service:4005/**
 
         - id: api-docs-auth-route
           uri: http://auth-service:4005
@@ -36,7 +41,7 @@ spring:
             - Path=/api/patients/**
           filters:
             - StripPrefix=1
-            # - JwtValidation
+            # - JwtValidation #Can be used to have a middlerware filter before routing the request
 
         # Route for /api/docs/patients to patient-service /v3/api-docs
         - id: api-docs-patient-route

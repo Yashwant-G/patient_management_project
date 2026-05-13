@@ -10,6 +10,7 @@ import reactor.core.publisher.Mono;
 @RestControllerAdvice
 public class JwtValidationException {
 
+    //Used when webClient builder gets an exception from calling API: No use currently
     @ExceptionHandler(WebClientResponseException.Unauthorized.class)
     public Mono<Void> handleUnauthorizedException(ServerWebExchange exchange) {
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);

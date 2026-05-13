@@ -7,6 +7,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Converts JWT claim "role" (e.g. "ADMIN") to Spring Security authority "ROLE_ADMIN".
@@ -19,7 +20,10 @@ public class JwtRoleConverter implements Converter<Jwt, Collection<GrantedAuthor
         if (role == null || role.isBlank()) {
             return List.of();
         }
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.trim()));
+        String normalizedRole = role.trim();
+        if (normalizedRole.startsWith("ROLE_")) {
+            return List.of(new SimpleGrantedAuthority(normalizedRole.toUpperCase(Locale.ROOT)));
+        }
+        return List.of(new SimpleGrantedAuthority("ROLE_" + normalizedRole.toUpperCase(Locale.ROOT)));
     }
 }
-

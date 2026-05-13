@@ -9,6 +9,10 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,9 +43,19 @@ public class BillingServiceGrpcClient {
                 .setEmail(patient.getEmail())
                 .build();
 
-        BillingResponse response = blockingStub.createBillingAccount(billingRequest);
-        log.info("Received response from Billing Service via GRPC: {}", response);
-        return response;
+        log.info("Starting Billing service gRPC call for patientId={}", patient.getId());
+        try {
+            BillingResponse response = blockingStub.createBillingAccount(billingRequest);
+            log.info("Billing service gRPC call completed - patientId={}, status={}", patient.getId(), response.getStatus());
+            return response;
+        } catch (StatusRuntimeException e) {
+            log.error("Billing service gRPC call failed - status={}, patientId={}, error={}",
+                    e.getStatus().getCode(), patient.getId(), e.getMessage());
+            if (e.getStatus().getCode() == Status.Code.UNAVAILABLE) {
+                log.error("Billing service is unavailable at configured endpoint. Please verify Billing gRPC server health/connectivity.");
+            }
+            throw e;
+        }
     }
 
     public BillingResponse billingFallback(Patient patient, Throwable t) {

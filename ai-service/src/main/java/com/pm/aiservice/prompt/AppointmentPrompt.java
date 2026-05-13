@@ -17,7 +17,8 @@ public class AppointmentPrompt {
         - Output ONLY valid JSON
         - No explanation, no markdown
         - All fields must exist
-        - end_time must be in Future
+        - appointment_date must be in Future
+        - start_time must be before the end_time
         - Missing values → ""
 
         FORMAT:
@@ -32,10 +33,12 @@ public class AppointmentPrompt {
         }
 
         LOGIC:
-        - Convert time to ISO: yyyy-MM-dd'T'HH:mm:ss
+        - Convert time to ISO: HH:mm:ss
+        - Convert date to ISO: yyyy-MM-dd
         - If end_time missing → start_time + 30 minutes
         - patient_name: extract the patient's full name from the input
         - doctor_name: extract the doctor's name exactly as mentioned in the input
+        - reason: logically compute the reason for appointment from the string input
 
         INPUT:
         %s

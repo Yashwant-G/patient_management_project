@@ -19,6 +19,7 @@ public class CustomUserDetailService implements UserDetailsService {
         this.userSevice = userSevice;
     }
 
+    // here username can by anything, like its email for our use
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user=userSevice.findByEmail(username)

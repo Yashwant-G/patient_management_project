@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -30,7 +31,7 @@ public class AppointmentController {
 
     @Operation(summary = "Get appointments by date range")
     @GetMapping
-    public List<AppointmentResponseDto> getAppointmentByDateRange(@RequestParam LocalDateTime from, @RequestParam LocalDateTime to) {
+    public List<AppointmentResponseDto> getAppointmentByDateRange(@RequestParam LocalDate from, @RequestParam LocalDate to) {
         log.info("GET /appointments - from={}, to={}", from, to);
         return appointmentService.getAppointmentByDateRange(from, to);
     }

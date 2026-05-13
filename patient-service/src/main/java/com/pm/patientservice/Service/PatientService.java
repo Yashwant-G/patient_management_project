@@ -93,43 +93,66 @@ public class PatientService {
     }
 
     public PatientDTO createPatient(PatientRequestDTO patientRequestDTO) {
+        log.info("Creating new patient with email: {}", patientRequestDTO.getEmail());
         if (patientRepository.existsByEmail(patientRequestDTO.getEmail())) {
+            log.warn("Patient creation failed: email already exists - {}", patientRequestDTO.getEmail());
             throw new EmailAlreadyExistsException("Email " + patientRequestDTO.getEmail() + " already exists");
         }
+
+        log.info("Saving patient to database: email={}", patientRequestDTO.getEmail());
         Patient patient = patientRepository.save(PatientMapper.toEntity(patientRequestDTO));
-        log.info("Patient created with id: {}", patient.getId());
+        log.info("Patient successfully saved to database with id: {}", patient.getId());
 
-        billingServiceGrpcClient.createBillingAccount(patient);
+        try {
+            log.info("Initiating gRPC call to Billing Service for patient: id={}", patient.getId());
+            billingServiceGrpcClient.createBillingAccount(patient);
+            log.info("Billing account creation initiated successfully for patient: id={}", patient.getId());
+        } catch (Exception e) {
+            log.error("Billing service gRPC call failed for patient: id={}. Error: {}", patient.getId(), e.getMessage());
+        }
 
+        log.info("Sending PATIENT_CREATED event to Kafka topic: patient_topic");
         kafkaProducer.sendEvent(patient, "patient_topic", "PATIENT_CREATED");
+        log.info("Event sent to Kafka successfully");
 
         return PatientMapper.toDto(patient);
     }
 
     public PatientDTO updatePatient(UUID id, PatientRequestDTO patientRequestDTO) {
+        log.info("Updating patient: id={}, email={}", id, patientRequestDTO.getEmail());
         if (patientRepository.existsByEmailAndIdNot(patientRequestDTO.getEmail(), id)) {
+            log.warn("Patient update failed: email already exists - {}", patientRequestDTO.getEmail());
             throw new EmailAlreadyExistsException("Patient with Email " + patientRequestDTO.getEmail() + " already exists");
         }
+
+        log.info("Fetching patient from database: id={}", id);
         Patient patient = patientRepository.findById(id).orElseThrow(() -> new PatientNotFoundException("Patient with id " + id + " not found"));
+        log.info("Patient found in database: id={}, name={}", patient.getId(), patient.getName());
 
         patient.setName(patientRequestDTO.getName());
         patient.setEmail(patientRequestDTO.getEmail());
         patient.setAddress(patientRequestDTO.getAddress());
         patient.setDateOfBirth(LocalDate.parse(patientRequestDTO.getDateOfBirth()));
 
+        log.info("Saving updated patient to database: id={}", id);
         Patient updatedPatient = patientRepository.save(patient);
-        log.info("Patient updated: id={}", updatedPatient.getId());
+        log.info("Patient successfully updated in database: id={}, name={}", updatedPatient.getId(), updatedPatient.getName());
 
+        log.info("Sending PATIENT_UPDATED event to Kafka topic: patient_updated");
         kafkaProducer.sendEvent(updatedPatient, "patient_updated", "PATIENT_UPDATED");
+        log.info("PATIENT_UPDATED event sent to Kafka successfully");
 
         return PatientMapper.toDto(updatedPatient);
     }
 
     public void deletePatient(UUID id) {
+        log.info("Deleting patient: id={}", id);
         if (!patientRepository.existsById(id)) {
+            log.warn("Patient deletion failed: patient not found - id={}", id);
             throw new PatientNotFoundException("Patient with id " + id + " not found");
         }
+        log.info("Removing patient from database: id={}", id);
         patientRepository.deleteById(id);
-        log.info("Patient deleted: id={}", id);
+        log.info("Patient successfully deleted from database: id={}", id);
     }
 }

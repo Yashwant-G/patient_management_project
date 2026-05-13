@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
 
@@ -22,7 +21,7 @@ import java.util.Date;
 public class JwtUtil {
 
     private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
-    private final Key secretKey;
+    private final SecretKey secretKey;
 
     public JwtUtil(@Value("${jwt.secret}") String secret) {
         byte[] keyBytes = Base64.getDecoder().decode(secret.getBytes(StandardCharsets.UTF_8));
@@ -44,13 +43,14 @@ public class JwtUtil {
                 .claim("role", role)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hour expiration
-                .signWith(secretKey)
+                .signWith(secretKey, Jwts.SIG.HS256)
                 .compact();
     }
 
     public void validateToken(String token) {
         try {
             Jwts.parser().verifyWith((SecretKey) secretKey).build().parseSignedClaims(token);
+            log.info("Token is validated successfully: {}", token);
         } catch (SignatureException e) {
             throw new JwtException("Invalid JWT signature");
         } catch (JwtException e) {

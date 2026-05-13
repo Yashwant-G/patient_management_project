@@ -21,14 +21,18 @@ public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBas
         String amount = request.getAmount();
         String paymentMethod = request.getPaymentMethod();
 
+        log.info("Received paymentEventSend gRPC request - sagaId={}, appointmentId={}",
+                sagaId, appointmentId);
         log.info("PAYMENT: Step-2 initiated - sagaId={}, appointmentId={}, patientName={}, amount={}, paymentMethod={}",
                 sagaId, appointmentId, patientName, amount, paymentMethod);
 
         try {
             // Placeholder for payment processing logic
             String txnId = "TXN_" + request.getAppointmentId() + "_" + System.currentTimeMillis();
-            String status = "FAILURE"; // Initially set to PENDING
+            String status = "SUCCESS"; // Initially set to FAILURE for demo
             String message = "Network Down";
+
+            log.info("Processing payment - amount={}, method={}, generating txnId={}", amount, paymentMethod, txnId);
 
             PaymentResponse response = PaymentResponse
                     .newBuilder()
@@ -37,18 +41,23 @@ public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBas
                     .setMessage(message)
                     .build();
 
-            log.info("PAYMENT: Sending response - txnId={}, status={}", txnId, status);
+            log.info("Payment processed - sagaId={}, txnId={}, status={}, message={}", sagaId, txnId, status, message);
+            log.info("PAYMENT: Sending response - txnId={}, status={}, message={}", txnId, status, message);
+
             responseObserver.onNext(response);
             responseObserver.onCompleted();
+            log.info("paymentEventSend gRPC call completed successfully");
 
         } catch (NumberFormatException e) {
-            log.error("PAYMENT: Amount parsing error - sagaId={}, amount={}, error={}", sagaId, amount, e.getMessage());
+            log.error("PAYMENT: Amount parsing error - sagaId={}, appointmentId={}, amount={}, error={}",
+                    sagaId, appointmentId, amount, e.getMessage());
             responseObserver.onError(Status.INVALID_ARGUMENT
                     .withDescription("Invalid amount format: " + e.getMessage())
                     .asException());
 
         } catch (Exception e) {
-            log.error("PAYMENT: Unexpected error - sagaId={}, appointmentId={}, error={}", sagaId, appointmentId, e.getMessage(), e);
+            log.error("PAYMENT: Unexpected error - sagaId={}, appointmentId={}, patientName={}, error type={}, error message={}",
+                    sagaId, appointmentId, patientName, e.getClass().getSimpleName(), e.getMessage(), e);
             responseObserver.onError(Status.INTERNAL
                     .withDescription("Payment processing failed: " + e.getMessage())
                     .asException());

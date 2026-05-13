@@ -21,14 +21,26 @@ public class AiParsingService {
     }
 
     public ParseAppointmentResponse parse(String text){
-        String prompt=appointmentPrompt.buildPrompt(text);
+        log.info("Starting appointment text parsing");
+        try {
+            String prompt = appointmentPrompt.buildPrompt(text);
+            log.info("Prompt built successfully for text parsing");
+            log.debug("Prompt: {}", prompt);
 
-        log.info("prompt built: {}",prompt);
+            log.info("Calling Gemini AI model to process appointment text");
+            String aiResponse = chatConfig.call(prompt);
+            log.info("Received AI response from Gemini model");
+            log.debug("Raw AI Response: {}", aiResponse);
 
-        String aiResponse=chatConfig.call(prompt);
+            log.info("Mapping AI response to protobuf format");
+            ParseAppointmentResponse result = AppointmentMapper.mapToProto(aiResponse);
+            log.info("Appointment parsing completed successfully - patientId={}, doctorName={}",
+                    result.getPatientId(), result.getDoctorName());
 
-        log.info("Recieved raw Ai Response: {}",aiResponse);
-
-        return AppointmentMapper.mapToProto(aiResponse);
+            return result;
+        } catch (Exception e) {
+            log.error("Appointment parsing failed: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to parse appointment: " + e.getMessage(), e);
+        }
     }
 }
