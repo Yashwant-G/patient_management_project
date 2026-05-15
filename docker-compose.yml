@@ -1,0 +1,405 @@
+name: patient-management-service
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - internal
+  # Add env_file entries later if you prefer:
+  env_file:
+    - ./.env
+
+x-spring-service: &spring-service
+  <<: *service-defaults
+  pull_policy: build
+  # Add JVM flags, Spring profiles, and secret env vars later.
+  environment: {}
+  # Optional centralized logging config placeholder:
+  # logging:
+  #   driver: "json-file"
+  #   options:
+  #     max-size: "10m"
+  #     max-file: "3"
+
+services:
+  # -----------------------------------------------------------------------------
+  # Infrastructure
+  # -----------------------------------------------------------------------------
+  kafka:
+    <<: *service-defaults
+    container_name: kafka_1
+    image: apache/kafka:latest
+    ports:
+      - "9092:9092" # client traffic
+      - "9094:9094" # controller listener (optional external mapping)
+    environment:
+      # KRaft mode (no Zookeeper)
+      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS}
+      KAFKA_CONTROLLER_LISTENER_NAMES: ${KAFKA_CONTROLLER_LISTENER_NAMES}
+      KAFKA_CONTROLLER_QUORUM_VOTERS: ${KAFKA_CONTROLLER_QUORUM_VOTERS}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: ${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP}
+      KAFKA_LISTENERS: ${KAFKA_LISTENERS}
+      KAFKA_NODE_ID: ${KAFKA_NODE_ID}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR}
+      KAFKA_PROCESS_ROLES: ${KAFKA_PROCESS_ROLES}
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: ${KAFKA_TRANSACTION_STATE_LOG_MIN_ISR}
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: ${KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR}
+      # Replace with secure cluster id for non-dev usage.
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:-REPLACE_WITH_KRAFT_CLUSTER_ID}
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    <<: *service-defaults
+    container_name: redis_1
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  prometheus:
+    <<: *service-defaults
+    container_name: prometheus_1
+    image: prom/prometheus:latest
+    ports:
+      - "9091:9090"
+    volumes:
+      # Replace/adjust this mapping when finalizing monitoring config.
+      - "/home/yashwant/Downloads/Switch Prep/Patient-Management-Project/patient management project/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    depends_on:
+      patient-service:
+        condition: service_started
+
+  grafana:
+    <<: *service-defaults
+    container_name: grafana_1
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      prometheus:
+        condition: service_started
+
+  # -----------------------------------------------------------------------------
+  # Databases
+  # -----------------------------------------------------------------------------
+  appointment-service-db:
+    <<: *service-defaults
+    container_name: appointment-service-db_1
+    image: postgres:latest
+    ports:
+      - "5002:5432"
+    environment:
+      POSTGRES_DB: ${APPOINTMENT_DB_NAME}
+      POSTGRES_USER: ${APPOINTMENT_DB_USER}
+      POSTGRES_PASSWORD: ${APPOINTMENT_DB_PASSWORD}
+    volumes:
+      - "/home/yashwant/Downloads/Switch Prep/Patient-Management-Project/db-volumes/appointment-service-db:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${APPOINTMENT_DB_USER} -d ${APPOINTMENT_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  doctor-service-db:
+    <<: *service-defaults
+    container_name: doctor-service-db_1
+    image: postgres:latest
+    ports:
+      - "5003:5432"
+    environment:
+      POSTGRES_DB: ${DOCTOR_DB_NAME}
+      POSTGRES_USER: ${DOCTOR_DB_USER}
+      POSTGRES_PASSWORD: ${DOCTOR_DB_PASSWORD}
+    volumes:
+      - "/home/yashwant/Downloads/Switch Prep/Patient-Management-Project/db-volumes/doctor-service-db:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DOCTOR_DB_USER} -d ${DOCTOR_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  payment-service-db:
+    <<: *service-defaults
+    container_name: payment-service-db_1
+    image: postgres:latest
+    ports:
+      - "5004:5432"
+    environment:
+      POSTGRES_DB: ${PAYMENT_DB_NAME}
+      POSTGRES_USER: ${PAYMENT_DB_USER}
+      POSTGRES_PASSWORD: ${PAYMENT_DB_PASSWORD}
+    volumes:
+      - "/home/yashwant/Downloads/Switch Prep/Patient-Management-Project/db-volumes/payment-service-db:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PAYMENT_DB_USER} -d ${PAYMENT_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  auth-service-db:
+    <<: *service-defaults
+    container_name: auth-service-db_1
+    image: postgres:latest
+    ports:
+      - "5001:5432"
+    environment:
+      POSTGRES_DB: ${AUTH_DB_NAME}
+      POSTGRES_USER: ${AUTH_DB_USER}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
+    volumes:
+      - "/home/yashwant/Downloads/Switch Prep/Patient-Management-Project/db-volumes/auth-service-db:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER} -d ${AUTH_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  patient-service-db:
+    <<: *service-defaults
+    container_name: patient-service-db_1
+    image: postgres:latest
+    ports:
+      - "5000:5432"
+    environment:
+      POSTGRES_DB: ${PATIENT_DB_NAME}
+      POSTGRES_USER: ${PATIENT_DB_USER}
+      POSTGRES_PASSWORD: ${PATIENT_DB_PASSWORD}
+    volumes:
+      - "/home/yashwant/Downloads/Switch Prep/Patient-Management-Project/db-volumes/patient-service-db:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PATIENT_DB_USER} -d ${PATIENT_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # -----------------------------------------------------------------------------
+  # Spring Boot Microservices
+  # -----------------------------------------------------------------------------
+  api-gateway:
+    <<: *spring-service
+    container_name: api-gateway_1
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "9000:9000"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${API_GATEWAY_PROFILE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      patient-service:
+        condition: service_started
+      appointment-service:
+        condition: service_started
+      doctor-service:
+        condition: service_started
+
+  auth-service:
+    <<: *spring-service
+    container_name: auth-service_1
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "4005:4005"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${AUTH_PROFILE}
+      SPRING_DATASOURCE_URL: ${AUTH_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT}
+      SPRING_SQL_INIT_MODE: ${SPRING_SQL_INIT_MODE}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      auth-service-db:
+        condition: service_healthy
+
+  patient-service:
+    <<: *spring-service
+    container_name: patient-service_1
+    build:
+      context: ./patient-service
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${PATIENT_PROFILE:-docker}
+      SPRING_DATASOURCE_URL: ${PATIENT_DATASOURCE_URL:-jdbc:postgresql://patient-service-db:5432/db}
+      SPRING_DATASOURCE_USERNAME: ${PATIENT_DB_USER:-admin_user}
+      SPRING_DATASOURCE_PASSWORD: ${PATIENT_DB_PASSWORD:-REPLACE_ME}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
+      BILLING_SERVICE_ADDRESS: ${BILLING_SERVICE_ADDRESS:-billing-service}
+      BILLING_SERVICE_GRPC_PORT: ${BILLING_SERVICE_GRPC_PORT:-9001}
+      # Add actuator/prometheus/env overrides here.
+    depends_on:
+      patient-service-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      billing-service:
+        condition: service_started
+
+  doctor-service:
+    <<: *spring-service
+    container_name: doctor-service_1
+    build:
+      context: ./doctor-service
+      dockerfile: Dockerfile
+    ports:
+      - "4008:4008"
+      - "9003:9003" # gRPC
+    environment:
+      SPRING_PROFILES_ACTIVE: ${DOCTOR_PROFILE:-docker}
+      SPRING_DATASOURCE_URL: ${DOCTOR_DATASOURCE_URL:-jdbc:postgresql://doctor-service-db:5432/db}
+      SPRING_DATASOURCE_USERNAME: ${DOCTOR_DB_USER:-admin_user}
+      SPRING_DATASOURCE_PASSWORD: ${DOCTOR_DB_PASSWORD:-REPLACE_ME}
+      GRPC_SERVER_PORT: ${DOCTOR_GRPC_PORT:-9003}
+      # Add doctor-service runtime vars here.
+    depends_on:
+      doctor-service-db:
+        condition: service_healthy
+
+  payment-service:
+    <<: *spring-service
+    container_name: payment-service_1
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "4009:4009"
+      - "9004:9004" # gRPC
+    environment:
+      SPRING_PROFILES_ACTIVE: ${PAYMENT_PROFILE:-docker}
+      SPRING_DATASOURCE_URL: ${PAYMENT_DATASOURCE_URL:-jdbc:postgresql://payment-service-db:5432/db}
+      SPRING_DATASOURCE_USERNAME: ${PAYMENT_DB_USER:-admin_user}
+      SPRING_DATASOURCE_PASSWORD: ${PAYMENT_DB_PASSWORD:-REPLACE_ME}
+      GRPC_SERVER_PORT: ${PAYMENT_GRPC_PORT:-9004}
+      # Add payment-service runtime vars here.
+    depends_on:
+      payment-service-db:
+        condition: service_healthy
+
+  billing-service:
+    <<: *spring-service
+    container_name: billing-service_1
+    build:
+      context: ./billing-service
+      dockerfile: Dockerfile
+    ports:
+      - "4001:4001"
+      - "9001:9001" # gRPC
+    environment:
+      SPRING_PROFILES_ACTIVE: ${BILLING_PROFILE:-docker}
+      GRPC_SERVER_PORT: ${BILLING_GRPC_PORT:-9001}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      # Add billing DB/env integration vars here when implemented.
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  ai-service:
+    <<: *spring-service
+    container_name: ai-service_1
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "4007:4007"
+      - "9002:9002" # gRPC
+    environment:
+      SPRING_PROFILES_ACTIVE: ${AI_PROFILE:-docker}
+      GRPC_SERVER_PORT: ${AI_GRPC_PORT:-9002}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-REPLACE_ME}
+      # Add AI model/runtime/env vars here.
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  analytics-service:
+    <<: *spring-service
+    container_name: analytics-service_1
+    build:
+      context: ./analytics-service
+      dockerfile: Dockerfile
+    ports:
+      - "4002:4002"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${ANALYTICS_PROFILE:-docker}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      # Add analytics DB/env vars here when implemented.
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  appointment-service:
+    <<: *spring-service
+    container_name: appointment-service_1
+    build:
+      context: ./appointment-service
+      dockerfile: Dockerfile
+    ports:
+      - "4006:4006"
+      # Add additional external port mappings here if needed.
+    environment:
+      SPRING_PROFILES_ACTIVE: ${APPOINTMENT_PROFILE:-docker}
+      SPRING_DATASOURCE_URL: ${APPOINTMENT_DATASOURCE_URL:-jdbc:postgresql://appointment-service-db:5432/db}
+      SPRING_DATASOURCE_USERNAME: ${APPOINTMENT_DB_USER:-admin_user}
+      SPRING_DATASOURCE_PASSWORD: ${APPOINTMENT_DB_PASSWORD:-REPLACE_ME}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      DOCTOR_SERVICE_URL: ${DOCTOR_SERVICE_URL:-http://doctor-service:4008}
+      DOCTOR_SERVICE_ADDRESS: ${DOCTOR_SERVICE_ADDRESS:-doctor-service}
+      DOCTOR_SERVICE_GRPC_PORT: ${DOCTOR_SERVICE_GRPC_PORT:-9003}
+      PAYMENT_SERVICE_ADDRESS: ${PAYMENT_SERVICE_ADDRESS:-payment-service}
+      PAYMENT_SERVICE_GRPC_PORT: ${PAYMENT_SERVICE_GRPC_PORT:-9004}
+      AI_SERVICE_ADDRESS: ${AI_SERVICE_ADDRESS:-ai-service}
+      AI_SERVICE_GRPC_PORT: ${AI_SERVICE_GRPC_PORT:-9002}
+      # Add saga tuning/env vars here.
+    depends_on:
+      appointment-service-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      doctor-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      ai-service:
+        condition: service_started
+
+networks:
+  internal:
+    external: true
+    name: internal
+
+volumes:
+  prometheus-data:
+  appointment-db-data:
+  doctor-db-data:
+  payment-db-data:
+  auth-db-data:
+  patient-db-data:
+

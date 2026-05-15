@@ -1,838 +1,765 @@
+<div align="center">
+
 # 🏥 Patient Management System
 
-A comprehensive microservices-based patient management platform built with Spring Boot, featuring real-time event processing, secure authentication, and scalable architecture.
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&duration=2800&pause=900&color=1B75D0&width=900&lines=Cloud-ready+Healthcare+Microservices;Saga-Orchestrated+Appointment+Booking;Kafka+%2B+gRPC+%2B+Spring+Cloud;AI-Assisted+Appointment+Workflows)](https://git.io/typing-svg)
+
+<br/>
+
+![Java](https://img.shields.io/badge/Java-21-orange?style=for-the-badge&logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=for-the-badge&logo=spring-boot)
+![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-Gateway-00A98F?style=for-the-badge)
+![Kafka](https://img.shields.io/badge/Apache%20Kafka-Event%20Driven-231F20?style=for-the-badge&logo=apache-kafka)
+![gRPC](https://img.shields.io/badge/gRPC-Protobuf-244C5A?style=for-the-badge)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Service%20DBs-4169E1?style=for-the-badge&logo=postgresql)
+![Redis](https://img.shields.io/badge/Redis-Cache%20%2B%20Rate%20Limit-DC382D?style=for-the-badge&logo=redis)
+![AI](https://img.shields.io/badge/Spring%20AI-Gemini%202.5-8E44AD?style=for-the-badge)
+
+**A production-grade healthcare microservices platform** combining Spring Boot, Kafka, gRPC, distributed saga orchestration, and AI-powered workflows.
+
+</div>
 
 ---
 
-## 📋 Table of Contents
+## 📋 Quick Navigation
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Services](#services)
-- [Tech Stack](#tech-stack)
-- [Ports and URLs](#ports-and-urls)
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [API Documentation](#api-documentation)
-- [Monitoring](#monitoring)
-- [Contributing](#contributing)
-- [License](#license)
+| 📖 | 🏗️ | 🚀 | 📚 | ⚙️ |
+|---|---|---|---|---|
+| [Overview](#-overview) | [Architecture](#-system-architecture) | [Services](#-service-landscape) | [Workflows](#-workflow-details) | [Tech Stack](#-technology-stack) |
 
 ---
 
 ## 🎯 Overview
 
-The Patient Management System is an enterprise-grade microservices platform designed to streamline patient data management, appointments, billing, and analytics. The system follows distributed architecture principles with independent services communicating through APIs and event streams.
+**Patient Management System** is a modern healthcare backend platform demonstrating enterprise-grade distributed system patterns. It showcases:
 
-**Key Features:**
-- ✅ Multi-service architecture with API Gateway
-- ✅ Asynchronous event processing with Kafka
-- ✅ JWT-based authentication and authorization
-- ✅ Real-time analytics and monitoring
-- ✅ gRPC for inter-service communication
-- ✅ Containerized deployment with Docker
-- ✅ Prometheus metrics and monitoring
-- ✅ Redis caching and session management
-- ✅ Resilience4j circuit breaker patterns
+<table>
+<tr>
+<td width="50%">
 
----
+### ✨ Key Features
+- 🔐 JWT-based authentication & role-based access
+- 📦 Event-driven microservices architecture
+- 🎭 Saga orchestration for complex workflows
+- 🤖 AI-powered appointment parsing (Gemini 2.5)
+- 💾 Multi-database strategy per service
+- ⚡ Redis caching & rate limiting
+- 📊 Prometheus metrics & actuator health
+- 🐳 Docker-ready deployment
 
-## 🏗️ Architecture
+</td>
+<td width="50%">
 
-```
-                     ┌──────────────────────────────────────┐
-                     │         Client Applications           │
-                     └────────────────┬─────────────────────┘
-                                      │ HTTP Requests
-                                      ▼
-                          ┌───────────────────────────┐
-                          │        API Gateway         │
-                          │        (Port: 9000)        │
-                          │   JWT Validation Filter    │
-                          └────────┬─────────┬─────────┘
-                                   │         │
-              ┌────────────────────┘         └──────────────────────┐
-              │                                                       │
-              ▼                                                       ▼
-   ┌──────────────────────┐                          ┌───────────────────────────┐
-   │     Auth Service     │                          │      Patient Service       │
-   │     (Port: 4005)     │                          │      (Port: 4000)          │
-   │  - User registration │                          │  - Spring Actuator (metrics│
-   │  - JWT generate      │                          │    exposed to Prometheus)  │
-   │  - JWT validate      │                          │  - Redis cache (1 endpoint)│
-   │  - PostgreSQL        │                          │  - PostgreSQL              │
-   └──────────────────────┘                          └────┬──────┬───────┬───────┘
-                                                          │      │       │
-                           ┌──────────────────────────────┘      │       └──────────────────────┐
-                           │  Kafka (Protobuf)                    │ gRPC (Protobuf)               │ Kafka (Protobuf)
-                           ▼                                      ▼                               ▼
-              ┌────────────────────────┐              ┌────────────────────┐     ┌──────────────────────────┐
-              │    Analytics Service   │              │   Billing Service  │     │   Appointment Service     │
-              │  - Kafka consumer      │              │  - gRPC server     │     │   (Port: 4006)            │
-              │  - Patient event stats │              │  - Bill generation │     │  - Kafka consumer         │
-              │  - PostgreSQL          │              │  - PostgreSQL      │     │  - Syncs cached_patient   │
-              └────────────────────────┘              └────────────────────┘     │    table from Kafka event │
-                                                                                 │  - PostgreSQL             │
-                                                                                 └────────────┬─────────────┘
-                                                                                              │ gRPC (Protobuf)
-                                                                                              ▼
-                                                                                 ┌────────────────────────────┐
-                                                                                 │       AI Service           │
-                                                                                 │      (Port: 4007)          │
-                                                                                 │   gRPC Server: 9002        │
-                                                                                 │   Gemini 2.5 Flash         │
-                                                                                 │   (Google GenAI)           │
-                                                                                 │   - PostgreSQL             │
-                                                                                 └────────────────────────────┘
+### 🎓 Learning Highlights
+- Service-oriented architecture patterns
+- Event sourcing & async messaging
+- gRPC inter-service communication
+- Distributed transaction handling
+- API gateway security & routing
+- Database-per-service isolation
+- Observability & monitoring setup
 
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-                               Infrastructure (Dockerized via Docker Compose)
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-
-   ┌──────────────┐   ┌───────────────────┐   ┌────────────────────┐   ┌────────────┐   ┌───────────┐
-   │  PostgreSQL  │   │       Redis        │   │    Apache Kafka    │   │ Prometheus │   │  Grafana  │
-   │ (per service │   │  (Patient Service  │   │  + Zookeeper       │   │ (scrapes   │   │(dashboard │
-   │  own DB)     │   │   one endpoint)    │   │  (event streaming) │   │ actuator)  │   │& alerts)  │
-   └──────────────┘   └───────────────────┘   └────────────────────┘   └────────────┘   └───────────┘
-```
-
-### Data Flow Summary
-
-| Flow | Source | Protocol | Target | Purpose |
-|------|--------|----------|--------|---------|
-| Patient events | Patient Service | **Kafka** (Protobuf) | Analytics Service | Real-time analytics |
-| Patient events | Patient Service | **Kafka** (Protobuf) | Appointment Service | Sync `cached_patient` table |
-| Billing trigger | Patient Service | **gRPC** (Protobuf) | Billing Service | Trigger bill generation |
-| Appointment AI query | Appointment Service | **gRPC** (Protobuf) | AI Service | Doctor/patient AI queries |
-| Auth validation | Auth Service | **REST** (JWT) | API Gateway filter | Route-level JWT validation |
-| Metrics scrape | Patient Service | **HTTP** (Actuator) | Prometheus → Grafana | Observability |
+</td>
+</tr>
+</table>
 
 ---
 
-## 🔧 Services
+## 📐 System Architecture
 
-### 📱 **API Gateway**
-**Port:** `9000`
-**Purpose:** Single entry point for all client requests
-**Features:**
-- Request routing to downstream services
-- **JWT Validation Filter** — validates Bearer tokens on every request before forwarding (token issued by Auth Service)
-- Reactive processing with Spring Cloud Gateway (WebFlux)
-- Rate limiting and request throttling
+### 🌐 Overall System Flow
 
-**Technology Stack:**
-- Spring Cloud Gateway (WebFlux)
-- Spring Boot 3.5.9
+```text
+                                      ┌──────────────────────────────────────┐
+                                      │         Client Applications           │
+                                      └────────────────┬─────────────────────┘
+                                                       │ HTTP Requests
+                                                       ▼
+                                           ┌───────────────────────────┐
+                                           │        API Gateway         │
+                                           │        (Port: 9000)        │
+                                           │  JWT Security + Rate Limit │
+                                           │  Spring Cloud Gateway      │
+                                           └───────┬─────────┬─────────┘
+                                                   │         │
+                         ┌─────────────────────────┘         └─────────────────────────┐
+                         │                                                             │
+                         ▼                                                             ▼
+              ┌──────────────────────┐                                  ┌───────────────────────────┐
+              │     Auth Service     │                                  │      Patient Service       │
+              │     (Port: 4005)     │                                  │      (Port: 4000)          │
+              │  - User signup       │                                  │  - Patient CRUD            │
+              │  - Login             │                                  │  - Pagination + Search     │
+              │  - JWT generation    │                                  │  - Redis cached listing    │
+              │  - JWT validation    │                                  │  - Actuator metrics        │
+              │  - PostgreSQL        │                                  │  - PostgreSQL              │
+              └──────────────────────┘                                  └──────┬────────┬───────────┘
+                                                                                │        │
+                                              ┌─────────────────────────────────┘        └─────────────────────────────┐
+                                              │ Kafka Protobuf                                      gRPC Protobuf      │
+                                              ▼                                                       ▼                 │
+                                 ┌──────────────────────────┐                            ┌──────────────────────┐      │
+                                 │    Analytics Service     │                            │   Billing Service    │      │
+                                 │  - Kafka consumer        │                            │   (Port: 4001)       │      │
+                                 │  - Patient event stream  │                            │   gRPC Server: 9001  │      │
+                                 │  - Reporting extension   │                            │  - Billing account   │      │
+                                 └──────────────────────────┘                            └──────────────────────┘      │
+                                                                                                                        │ Kafka Protobuf
+                                                                                                                        ▼
+                                                                                                           ┌───────────────────────────┐
+                                                                                                           │   Appointment Service     │
+                                                                                                           │   (Port: 4006)            │
+                                                                                                           │  - Appointment queries    │
+                                                                                                           │  - Saga orchestration     │
+                                                                                                           │  - Kafka consumer         │
+                                                                                                           │  - cached_patient sync    │
+                                                                                                           │  - PostgreSQL             │
+                                                                                                           └───────┬─────────┬─────────┘
+                                                                                                                   │         │
+                                                                                   ┌───────────────────────────────┘         └───────────────────────────────┐
+                                                                                   │ gRPC Protobuf                                           gRPC Protobuf   │
+                                                                                   ▼                                                            ▼            │
+                                                                        ┌──────────────────────────┐                              ┌──────────────────────────┐ │
+                                                                        │      Doctor Service      │                              │     Payment Service      │ │
+                                                                        │      (Port: 4008)        │                              │      (Port: 4009)        │ │
+                                                                        │   gRPC Server: 9003      │                              │   gRPC Server: 9004      │ │
+                                                                        │  - Doctor search         │                              │  - Mock payment          │ │
+                                                                        │  - Slot availability     │                              │  - Transaction response  │ │
+                                                                        │  - Slot status update    │                              │  - PostgreSQL            │ │
+                                                                        │  - PostgreSQL            │                              └──────────────────────────┘ │
+                                                                        └──────────────────────────┘                                                           │
+                                                                                                                                                                │
+                                                                                                                                                                │ gRPC Protobuf
+                                                                                                                                                                ▼
+                                                                                                                                                   ┌──────────────────────────┐
+                                                                                                                                                   │       AI Service         │
+                                                                                                                                                   │      (Port: 4007)        │
+                                                                                                                                                   │   gRPC Server: 9002      │
+                                                                                                                                                   │  - Spring AI             │
+                                                                                                                                                   │  - Gemini 2.5 Flash      │
+                                                                                                                                                   │  - Appointment parsing   │
+                                                                                                                                                   └──────────────────────────┘
 
----
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                        Infrastructure / Platform Dependencies
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-### 👤 **Auth Service**
-**Port:** `4005`  
-**Purpose:** Centralized authentication and authorization  
-**Features:**
-- User registration (`/signup`) and login
-- JWT token generation and validation
-- Role-based access control (RBAC)
-- Password encryption and security
-- OpenAPI/Swagger documentation
-
-**Technology Stack:**
-- Spring Security
-- JJWT (JSON Web Tokens)
-- Spring Data JPA
-- PostgreSQL/H2 Database
-- Springdoc OpenAPI
-
----
-
-### 🏥 **Patient Service**
-**Port:** `4000`  
-**Purpose:** Core patient data management  
-**Features:**
-- Patient CRUD operations and medical history tracking
-- Publishes patient events to Kafka (consumed by Analytics and Appointment Services) using Protobuf serialization
-- Calls Billing Service directly via **gRPC** (Protobuf) to trigger billing on patient events
-- **Redis cache** on one specific read endpoint for low-latency responses
-- **Spring Actuator** endpoints exposed for Prometheus scraping (`/actuator/prometheus`, `/actuator/health`)
-- Circuit breaker for fault tolerance (Resilience4j)
-
-**Technology Stack:**
-- Spring Boot 3.5.8
-- Spring Data JPA
-- PostgreSQL
-- Kafka (Producer)
-- gRPC
-- Redis
-- Resilience4j
-- Micrometer Prometheus
-
----
-
-### 📅 **Appointment Service**
-**Port:** `4006`
-**Purpose:** Appointment scheduling and management
-**Features:**
-- Schedule, modify, and cancel appointments
-- Consumes patient events from Kafka to maintain a local `cached_patient` table (keeps in sync with the Patient Service's main patient table)
-- Forwards appointment/doctor queries to AI Service via gRPC for AI-assisted responses
-- Protocol Buffers for all inter-service communication
-- PostgreSQL for appointments and cached patient data
-
-**Technology Stack:**
-- Spring Boot 3.4.5
-- Spring Data JPA
-- PostgreSQL (appointments + `cached_patient` table)
-- Kafka (Consumer — patient events)
-- gRPC Client (→ AI Service)
-- Protocol Buffers
-
----
-
-### 🤖 **AI Service**
-**Port:** `4007` | **gRPC Port:** `9002`
-**Purpose:** AI-powered medical query assistance using Google Gemini
-**Features:**
-- Receives appointment/doctor queries via gRPC from Appointment Service
-- Processes queries using Google Gemini 2.5 Flash model
-- Low-temperature (0.2) responses for consistent medical output
-- Protocol Buffers for all gRPC communication
-- PostgreSQL for query/response persistence
-
-**Technology Stack:**
-- Spring Boot
-- gRPC Server
-- Spring AI (Google GenAI / Gemini 2.5 Flash)
-- Protocol Buffers
-- PostgreSQL
-
----
-
-### 👨‍⚕️ **Doctor Service**
-**Port:** `4008`
-**Purpose:** Doctor information and management
-**Features:**
-- Doctor profile search by name (full-text search)
-- Retrieve full doctor details by ID (qualifications, specialization, contact)
-- Get minimal doctor information (quick lookups)
-- Validate doctor existence
-- PostgreSQL for doctor records
-- OpenAPI/Swagger documentation
-
-**Endpoints:**
-- `GET /doctors/search?name={name}` — Search doctors by name
-- `GET /doctors/{id}` — Get complete doctor details
-- `GET /doctors/{id}/minimal` — Get minimal doctor info
-- `GET /doctors/{id}/exists` — Check if doctor exists
-
-**Technology Stack:**
-- Spring Boot 3.5.8
-- Spring Data JPA
-- PostgreSQL
-- Springdoc OpenAPI
-
----
-
-### 📊 **Analytics Service**
-**Purpose:** Real-time analytics and insights  
-**Features:**
-- Consumes events from Kafka
-- Generates analytics reports
-- Patient statistics and trends
-- Appointment analytics
-- Event-driven architecture
-
-**Technology Stack:**
-- Spring Boot 3.5.8
-- Kafka (Consumer)
-- Protocol Buffers
-- Event streaming
-
----
-
-### 💰 **Billing Service**
-**Purpose:** Billing and payment processing
-**Features:**
-- Receives billing triggers from Patient Service via **gRPC** (Protobuf)
-- Bill generation and invoice management
-- Payment tracking
-- PostgreSQL for billing records
-
-**Technology Stack:**
-- Spring Boot 3.5.8
-- gRPC Server (receives calls from Patient Service)
-- Protocol Buffers
-- PostgreSQL
-
----
-
-### 📈 **Monitoring (Prometheus + Grafana)**
-**Purpose:** System observability and metrics dashboards
-**Features:**
-- **Prometheus** scrapes `/actuator/prometheus` on Patient Service (and other services with Actuator enabled)
-- **Grafana** connects to Prometheus as a data source for dashboards and alerting
-- Spring Actuator health, info, and metrics endpoints
-- Configuration in `monitoring/prometheus.yml`
-
-**Access:**
-- Prometheus UI: `http://localhost:9090`
-- Grafana Dashboard: `http://localhost:3000` (default credentials: `admin / admin`)
-
----
-
-## 🛠️ Tech Stack
-
-| Component | Technology | Version / Notes |
-|-----------|-----------|---------|
-| **Language** | Java | 21 |
-| **Framework** | Spring Boot | 3.4.5 - 3.5.9 |
-| **API Gateway** | Spring Cloud Gateway (WebFlux) | 2025.0.1 |
-| **Message Queue** | Apache Kafka | 7.5.0 |
-| **RPC** | gRPC | 1.68.1 - 1.69.0 |
-| **Serialization** | Protocol Buffers | 3.25.5 |
-| **Authentication** | JWT (JJWT) | 0.12.6 |
-| **AI Model** | Google Gemini 2.5 Flash | via Spring AI (Google GenAI) |
-| **Database** | PostgreSQL | Each service has its own DB |
-| **Cache** | Redis | Patient Service (1 endpoint) |
-| **Metrics** | Prometheus + Grafana | Scrapes Actuator endpoints |
-| **Resilience** | Resilience4j | 2.3.0 |
-| **Container** | Docker + Docker Compose | Compose v3.8 |
-
----
-
-## 🔌 Ports and URLs
-
-For a comprehensive reference of all service ports, gRPC ports, database URLs, Docker internal hosts, and Swagger documentation endpoints, see the dedicated **[PortsAndUrl.md](PortsAndUrl.md)** documentation.
-
-**Quick Reference:**
-- **API Gateway:** `http://localhost:9000`
-- **Auth Service:** `http://localhost:4005`
-- **Patient Service:** `http://localhost:4000`
-- **Appointment Service:** `http://localhost:4006`
-- **Doctor Service:** `http://localhost:4008` (gRPC: 9003)
-- **AI Service:** `http://localhost:4007` (gRPC: 9002)
-- **Billing Service:** Port 4001 (gRPC: 9001)
-- **Payment Service:** Port 4009 (gRPC: 9004)
-- **Prometheus:** `http://localhost:9090`
-- **Grafana:** `http://localhost:3000`
-
----
-
-## 📋 Prerequisites
-
-Before you begin, ensure you have the following installed:
-
-- **Java Development Kit (JDK)** - Version 21 or higher
-  ```bash
-  java -version
-  ```
-
-- **Apache Maven** - Version 3.6.0 or higher
-  ```bash
-  mvn -version
-  ```
-
-- **Docker** - For containerized deployment
-  ```bash
-  docker --version
-  ```
-
-- **Docker Compose** - For orchestrating multi-container applications
-  ```bash
-  docker-compose --version
-  ```
-
-- **PostgreSQL** (Optional) - For local database development
-  ```bash
-  psql --version
-  ```
-
----
-
-## 🚀 Quick Start
-
-### Option 1: Docker Compose (Recommended)
-
-This will start all services along with Kafka, Zookeeper, and other dependencies.
-
-```bash
-# Navigate to project root
-cd patient-management-project
-
-# Build all services
-mvn clean install -DskipTests
-
-# Start all services with Docker Compose
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Verify services are running
-docker-compose ps
+     ┌──────────────────┐      ┌──────────────────┐      ┌──────────────────────┐      ┌────────────────────┐      ┌────────────────────┐
+     │    PostgreSQL    │      │      Redis       │      │    Apache Kafka      │      │    Prometheus      │      │      Docker        │
+     │  Per-service DBs │      │ Cache + Gateway  │      │  Protobuf events     │      │ Actuator metrics   │      │ Per-service images │
+     │                  │      │ rate limiting    │      │  patient_topic       │      │ Patient Service    │      │ Dockerfiles exist  │
+     └──────────────────┘      └──────────────────┘      └──────────────────────┘      └────────────────────┘      └────────────────────┘
 ```
 
-**Service URLs:**
-- API Gateway: `http://localhost:9000`
-- Patient Service: `http://localhost:4000`
-- Auth Service: `http://localhost:4005`
-- Appointment Service: `http://localhost:4006`
-- Doctor Service: `http://localhost:4008`
-- AI Service: `http://localhost:4007` | gRPC: `localhost:9002`
-- Prometheus: `http://localhost:9090`
-- Grafana: `http://localhost:3000`
 
-### Option 2: Run Services Individually
+### Overall Flow from Patient Service
 
-```bash
-# Build all modules
-mvn clean install -DskipTests
+```text
+                                      ┌──────────────────────────────────────┐
+                                      │          Client / API Gateway         │
+                                      └────────────────┬─────────────────────┘
+                                                       │ REST
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │           Patient Service             │
+                                      │             (Port: 4000)              │
+                                      │  - Create patient                     │
+                                      │  - Update patient                     │
+                                      │  - Delete patient                     │
+                                      │  - Search / sort / paginate patients  │
+                                      │  - Validate duplicate email           │
+                                      └───────┬───────────────┬──────────────┘
+                                              │               │
+                         ┌────────────────────┘               └────────────────────┐
+                         │                                                         │
+                         ▼                                                         ▼
+              ┌──────────────────────┐                                ┌────────────────────────┐
+              │      PostgreSQL      │                                │         Redis          │
+              │   patient-service DB │                                │  Cached patient pages  │
+              │  - Patient records   │                                │  TTL: 10 minutes       │
+              └──────────────────────┘                                └────────────────────────┘
+                         │
+                         │ After create / update
+                         ▼
+              ┌─────────────────────────────────────────────────────────────────────┐
+              │                           Kafka                                      │
+              │  Topics: patient_topic, patient_updated                             │
+              │  Payload: PatientEvent Protobuf                                     │
+              └───────────────┬─────────────────────────────────────┬───────────────┘
+                              │                                     │
+                              ▼                                     ▼
+              ┌──────────────────────────────┐        ┌──────────────────────────────┐
+              │     Appointment Service      │        │      Analytics Service       │
+              │  - Kafka consumer            │        │  - Kafka consumer            │
+              │  - Sync cached_patient table │        │  - Event analytics hook      │
+              │  - Appointment patient lookup│        │  - Reporting extension point │
+              └──────────────────────────────┘        └──────────────────────────────┘
 
-# Terminal 1 - Start Zookeeper
-docker run -d --name zookeeper -e ZOOKEEPER_CLIENT_PORT=2181 confluentinc/cp-zookeeper:7.5.0
-
-# Terminal 2 - Start Kafka
-docker run -d --name kafka -e KAFKA_BROKER_ID=1 -e KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181 \
-  -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092 \
-  --link zookeeper confluentinc/cp-kafka:7.5.0
-
-# Terminal 3 - Start Auth Service
-cd auth-service
-mvn spring-boot:run
-
-# Terminal 4 - Start Patient Service
-cd patient-service
-mvn spring-boot:run
-
-# Terminal 5 - Start Appointment Service
-cd appointment-service
-mvn spring-boot:run
-
-# Terminal 6 - Start API Gateway
-cd api-gateway
-mvn spring-boot:run
-
-# Terminal 7 - Start Doctor Service
-cd doctor-service
-mvn spring-boot:run
-
-# Terminal 8 - Start Analytics Service (Optional)
-cd analytics-service
-mvn spring-boot:run
-
-# Terminal 9 - Start Billing Service (Optional)
-cd billing-service
-mvn spring-boot:run
+              ┌─────────────────────────────────────────────────────────────────────┐
+              │ Patient creation also triggers Billing Service through gRPC          │
+              └────────────────────────────────────┬────────────────────────────────┘
+                                                   │ gRPC Protobuf
+                                                   ▼
+                                      ┌──────────────────────────────┐
+                                      │        Billing Service        │
+                                      │        gRPC Port: 9001        │
+                                      │  - createBillingAccount()     │
+                                      │  - Returns account status     │
+                                      └──────────────────────────────┘
 ```
 
-### Verify Installation
 
-```bash
-# Check API Gateway
-curl http://localhost:9000/health
+### Appointment Service Saga Orchestrator Flow
 
-# Check Patient Service
-curl http://localhost:4000/swagger-ui.html
-
-# Check Auth Service
-curl http://localhost:4005/swagger-ui.html
-
-# Check Doctor Service
-curl http://localhost:4008/swagger-ui.html
+```text
+                                      ┌──────────────────────────────────────┐
+                                      │          Client / API Gateway         │
+                                      └────────────────┬─────────────────────┘
+                                                       │ POST /appointments/book
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │        Appointment Service            │
+                                      │             (Port: 4006)              │
+                                      │  SagaOrchestratorService              │
+                                      └────────────────┬─────────────────────┘
+                                                       │
+                                                       │ 1. Validate cached patient
+                                                       │ 2. Check duplicate requestId
+                                                       │ 3. Save appointment as PENDING
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │          Appointment DB               │
+                                      │  - Appointment row                    │
+                                      │  - sagaId                             │
+                                      │  - PENDING status                     │
+                                      └────────────────┬─────────────────────┘
+                                                       │
+                                                       │ gRPC: checkSlotAvailability()
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │            Doctor Service             │
+                                      │          gRPC Server: 9003            │
+                                      │  - Validate doctor slot               │
+                                      │  - Return slotId and fees             │
+                                      └────────────────┬─────────────────────┘
+                                                       │
+                                                       │ Appointment status -> PAYMENT_PENDING
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │        Appointment Service            │
+                                      │  - Set amount                         │
+                                      │  - Set slotId                         │
+                                      │  - Send payment request               │
+                                      └────────────────┬─────────────────────┘
+                                                       │ gRPC: paymentEventSend()
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │           Payment Service             │
+                                      │          gRPC Server: 9004            │
+                                      │  - Mock payment processing            │
+                                      │  - Generate txnId                     │
+                                      │  - Return SUCCESS / FAILURE           │
+                                      └────────────────┬─────────────────────┘
+                                                       │
+                         ┌─────────────────────────────┴─────────────────────────────┐
+                         │                                                           │
+                         ▼                                                           ▼
+          ┌────────────────────────────────┐                       ┌────────────────────────────────┐
+          │        Payment SUCCESS          │                       │        Payment FAILURE          │
+          │  - Update doctor slot Success   │                       │  - Update doctor slot Failure   │
+          │  - Appointment CONFIRMED        │                       │  - Appointment CANCELLED        │
+          │  - Return success response      │                       │  - Return failed response       │
+          └────────────────────────────────┘                       └────────────────────────────────┘
 ```
+
+
+### Appointment Service AI Appointment Book Flow
+
+```text
+                                      ┌──────────────────────────────────────┐
+                                      │          Client / API Gateway         │
+                                      └────────────────┬─────────────────────┘
+                                                       │ POST /appointments/ai-add/{patientId}
+                                                       │ Plain text appointment request
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │        Appointment Service            │
+                                      │             (Port: 4006)              │
+                                      │  - Receive plain text                 │
+                                      │  - Load cached patient context        │
+                                      │  - Add patient id and patient name    │
+                                      └────────────────┬─────────────────────┘
+                                                       │
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │        cached_patient Table           │
+                                      │  - Patient id                         │
+                                      │  - Patient full name                  │
+                                      │  - Patient email                      │
+                                      └────────────────┬─────────────────────┘
+                                                       │
+                                                       │ gRPC: parseAppointment(text)
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │             AI Service                │
+                                      │      (Port: 4007, gRPC: 9002)         │
+                                      │  - Build appointment prompt           │
+                                      │  - Call Gemini through Spring AI      │
+                                      │  - Parse JSON response                │
+                                      │  - Return Protobuf response           │
+                                      └────────────────┬─────────────────────┘
+                                                       │
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │          Gemini 2.5 Flash             │
+                                      │  - Extract doctor name                │
+                                      │  - Extract appointment date/time      │
+                                      │  - Extract reason                     │
+                                      │  - Return structured JSON             │
+                                      └────────────────┬─────────────────────┘
+                                                       │ Structured appointment response
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │        Appointment Service            │
+                                      │  - Receive doctorName from AI         │
+                                      │  - Search Doctor Service              │
+                                      └────────────────┬─────────────────────┘
+                                                       │ REST: /doctors/search?name=
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │            Doctor Service             │
+                                      │             (Port: 4008)              │
+                                      │  - Match doctor by name               │
+                                      │  - Return doctorId and fullName       │
+                                      └────────────────┬─────────────────────┘
+                                                       │
+                                                       ▼
+                                      ┌──────────────────────────────────────┐
+                                      │          Appointment DB               │
+                                      │  - Save AI-created appointment        │
+                                      │  - Return appointment response        │
+                                      └──────────────────────────────────────┘
+```
+
 
 ---
 
-## ⚙️ Configuration
+## 🏗️ Service Landscape
 
-### Environment Variables
+<table>
+<thead>
+<tr>
+<th>🎯 Service</th>
+<th>🌐 Port</th>
+<th>💾 Storage</th>
+<th>📡 Protocol</th>
+<th>📝 Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>API Gateway</strong></td>
+<td><code>9000</code></td>
+<td>Redis</td>
+<td>HTTP</td>
+<td>Central entry point & rate limiting</td>
+</tr>
+<tr>
+<td><strong>Auth Service</strong></td>
+<td><code>4005</code></td>
+<td>PostgreSQL</td>
+<td>REST</td>
+<td>Identity & JWT tokens</td>
+</tr>
+<tr>
+<td><strong>Patient Service</strong></td>
+<td><code>4000</code></td>
+<td>PostgreSQL + Redis</td>
+<td>REST + Kafka + gRPC</td>
+<td>Patient domain ownership</td>
+</tr>
+<tr>
+<td><strong>Appointment Service</strong></td>
+<td><code>4006</code></td>
+<td>PostgreSQL</td>
+<td>REST + Kafka + gRPC</td>
+<td>Appointment orchestration</td>
+</tr>
+<tr>
+<td><strong>Doctor Service</strong></td>
+<td><code>4008</code> / <code>9003</code> gRPC</td>
+<td>PostgreSQL</td>
+<td>REST + gRPC</td>
+<td>Doctor data & slots</td>
+</tr>
+<tr>
+<td><strong>AI Service</strong></td>
+<td><code>4007</code> / <code>9002</code> gRPC</td>
+<td>-</td>
+<td>gRPC</td>
+<td>AI appointment parsing</td>
+</tr>
+<tr>
+<td><strong>Payment Service</strong></td>
+<td><code>4009</code> / <code>9004</code> gRPC</td>
+<td>PostgreSQL</td>
+<td>gRPC</td>
+<td>Mock payment processor</td>
+</tr>
+<tr>
+<td><strong>Billing Service</strong></td>
+<td><code>4001</code> / <code>9001</code> gRPC</td>
+<td>-</td>
+<td>gRPC</td>
+<td>Billing account mgmt</td>
+</tr>
+<tr>
+<td><strong>Analytics Service</strong></td>
+<td><code>4002</code></td>
+<td>-</td>
+<td>Kafka</td>
+<td>Event analytics & reporting</td>
+</tr>
+</tbody>
+</table>
 
-Create a `.env` file in the project root:
+---
 
-```env
-# Kafka Configuration
-KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+## 🚀 Service Use Cases & Workflows
 
-# Database Configuration
-DB_URL=jdbc:postgresql://postgres:5432/patient_db
-DB_USERNAME=postgres
-DB_PASSWORD=your_password
-
-# Redis Configuration
-REDIS_HOST=redis
-REDIS_PORT=6379
-
-# JWT Configuration
-JWT_SECRET=your_secret_key_here
-JWT_EXPIRATION=86400000
-
-# Service Ports
-API_GATEWAY_PORT=9000
-AUTH_SERVICE_PORT=4005
-PATIENT_SERVICE_PORT=4000
-APPOINTMENT_SERVICE_PORT=4006
-DOCTOR_SERVICE_PORT=4008
-
-# Spring Profiles
-SPRING_PROFILES_ACTIVE=dev
+### 🔐 Auth Service
 ```
-
-### Application Properties
-
-Each service has its own `application.properties` or `application.yml`:
-
-**Patient Service** (`patient-service/src/main/resources/application.properties`):
-```properties
-server.port=4000
-spring.jpa.hibernate.ddl-auto=update
-spring.datasource.url=jdbc:postgresql://localhost:5432/patient_db
-spring.datasource.username=postgres
-spring.datasource.password=password
-spring.kafka.bootstrap-servers=localhost:9092
+Signup/Login Request → Validate Credentials → Generate JWT → Bearer Token for Gateway
 ```
+- User registration & login
+- JWT token generation & validation
+- Role-based identity model
 
-**Auth Service** (`auth-service/src/main/resources/application.properties`):
-```properties
-server.port=4005
-spring.security.user.name=admin
-spring.security.user.password=admin
+---
+
+### 👥 Patient Service
 ```
+Patient CRUD → PostgreSQL → Kafka Event → Appointment Cache + Analytics
+```
+- ✅ Create, update, delete, search patients
+- 🔍 Paginated listing with Redis caching
+- 📤 Event publishing for sync
+- 💳 Billing integration via gRPC
+
+---
+
+### 📅 Appointment Service
+```
+Booking Request → Saga Orchestration → Doctor Slot Check → Payment → Confirmation
+```
+**Saga Workflow Steps:**
+1. Create appointment (PENDING)
+2. Check doctor slot availability
+3. Request payment
+4. Confirm on success / Cancel on failure
+
+**AI Workflow:**
+1. Receive plain text appointment request
+2. Load cached patient context
+3. Call AI to parse appointment details
+4. Resolve doctor name to ID
+5. Save AI-created appointment
+
+---
+
+### 👨‍⚕️ Doctor Service
+```
+Doctor Query → Repository Lookup → Doctor DTO
+                ↓
+         Appointment Saga → gRPC Slot Check → Slot Status Update
+```
+- Doctor search & lookup
+- Slot availability checks
+- Slot status management
+
+---
+
+### 🤖 AI Service
+```
+Plain Text → Prompt Builder → Gemini 2.5 Flash → JSON Parse → Protobuf Response
+```
+- AI-powered appointment parsing
+- Natural language processing
+- Structured data extraction
+
+---
+
+---
+
+## 🔄 Workflow Details
+
+### 📊 Event-Driven Patient Synchronization
+
+| # | Source | Protocol | Target | Purpose |
+|---|--------|----------|--------|---------|
+| 1 | Patient Service | REST | PostgreSQL | Persist data |
+| 2 | Patient Service | Kafka Protobuf | `patient_topic` | Publish event |
+| 3 | Patient Service | Kafka Protobuf | `patient_updated` | Update event |
+| 4 | Kafka Consumer | Async | Appointment Service | Sync cache |
+| 5 | Kafka Consumer | Async | Analytics Service | Process stream |
+| 6 | Patient Service | gRPC Protobuf | Billing Service | Create account |
+
+### 🎭 Saga-Based Appointment Booking
+
+| Step | Action | State |
+|------|--------|-------|
+| 1️⃣ | Appointment requested | `PENDING` |
+| 2️⃣ | Slot availability checked | Slot & fee returned |
+| 3️⃣ | Payment requested | `PAYMENT_PENDING` |
+| 4️⃣ | Payment succeeds | `CONFIRMED` + slot marked Success |
+| 5️⃣ | Payment fails | `CANCELLED` + slot marked Failure |
+
+### 🧠 AI-Assisted Appointment Creation
+
+| Step | Action | Detail |
+|------|--------|--------|
+| 1️⃣ | Text received | Patient context added |
+| 2️⃣ | AI call sent | gRPC to AI Service |
+| 3️⃣ | Gemini processes | JSON appointment details |
+| 4️⃣ | Response mapped | Protobuf DTO |
+| 5️⃣ | Doctor resolved | Name → ID lookup |
+| 6️⃣ | Saved | AI appointment persisted |
+
+---
+
+## 🛠️ Technology Stack
+
+<table>
+<tr>
+<td width="50%">
+
+### 🎯 Backend
+- **Language**: Java 21
+- **Framework**: Spring Boot 3.x
+- **Gateway**: Spring Cloud Gateway WebFlux
+- **Security**: Spring Security + OAuth2 Resource Server
+- **Auth**: JWT + JJWT
+
+</td>
+<td width="50%">
+
+### 🔌 Integration
+- **Database**: PostgreSQL (per-service)
+- **Cache**: Redis
+- **Messaging**: Apache Kafka
+- **RPC**: gRPC + Protocol Buffers
+- **AI**: Spring AI + Gemini 2.5 Flash
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 📊 Observability
+- **Metrics**: Spring Actuator + Micrometer Prometheus
+- **Health**: Actuator health endpoints
+- **Monitoring**: Prometheus integration
+
+</td>
+<td>
+
+### 🚀 DevOps
+- **Build**: Maven wrappers (per-service)
+- **Container**: Docker per service
+- **Protocols**: REST + gRPC + Kafka
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🌐 Ports & URLs
+
+| Service | HTTP | gRPC | 📚 Swagger |
+|---------|------|------|-----------|
+| **API Gateway** | `9000` | - | - |
+| **Auth Service** | `4005` | - | http://localhost:4005/swagger-ui.html |
+| **Patient Service** | `4000` | - | http://localhost:4000/swagger-ui.html |
+| **Appointment Service** | `4006` | - | http://localhost:4006/swagger-ui.html |
+| **Doctor Service** | `4008` | `9003` | http://localhost:4008/swagger-ui.html |
+| **AI Service** | `4007` | `9002` | - |
+| **Billing Service** | `4001` | `9001` | - |
+| **Payment Service** | `4009` | `9004` | - |
+| **Analytics Service** | `4002` | - | - |
+
+> 💡 For detailed port information, see [PortsAndUrl.md](PortsAndUrl.md)
+
+---
+
+## 🚦 API Gateway Routes
+
+| Gateway Path | Target Service | Purpose |
+|---|---|---|
+| `/auth/**` | `http://auth-service:4005` | Auth endpoints |
+| `/api/patients/**` | `http://patient-service:4000` | Patient operations |
+| `/api/appointments/**` | `http://appointment-service:4006` | Appointment operations |
+| `/api/doctors/**` | `http://doctor-service:4008` | Doctor operations |
+| `/api-docs/auth` | Auth Service OpenAPI | Auth documentation |
+| `/api-docs/patients` | Patient Service OpenAPI | Patient documentation |
+| `/api-docs/appointments` | Appointment Service OpenAPI | Appointment documentation |
+| `/api-docs/doctors` | Doctor Service OpenAPI | Doctor documentation |
 
 ---
 
 ## 📚 API Documentation
 
-All services include **Swagger/OpenAPI** documentation:
+### 🔐 Auth Service
 
-### Access API Docs
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/signup` | 📝 Register new user |
+| `POST` | `/login` | 🔓 Generate JWT token |
+| `GET` | `/validate` | ✅ Validate bearer token |
 
-- **Patient Service Swagger UI:** `http://localhost:4000/swagger-ui.html`
-- **Auth Service Swagger UI:** `http://localhost:4005/swagger-ui.html`
-- **Appointment Service Swagger UI:** `http://localhost:4006/swagger-ui.html`
-- **Doctor Service Swagger UI:** `http://localhost:4008/swagger-ui.html`
+### 👥 Patient Service
 
-### Postman Collection
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/patients?page=1&size=10&sort=asc&sortField=name&searchValue=` | 📄 List patients (paginated + searchable) |
+| `POST` | `/patients` | ➕ Create patient |
+| `PUT` | `/patients/{id}` | ✏️ Update patient |
+| `DELETE` | `/patients/{id}` | 🗑️ Delete patient |
 
-Import the provided `patient-management.postman_collection.json` into Postman for ready-to-use API requests covering all services (Auth, Patient, Appointment, and Doctor APIs with both Gateway and Direct Service Access options).
+### 📅 Appointment Service
 
-**Collection Features:**
-- ✅ SignUp endpoint for user registration
-- ✅ Doctor API endpoints (search, get details, minimal info, existence check)
-- ✅ Gateway routes (port 9000) for all services
-- ✅ Direct service access (ports 4000, 4005, 4006, 4008) for testing
-- ✅ Pre-configured collection variables (baseUrl, authEmail, bearerToken, etc.)
-- ✅ Test scripts for automatic token management
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/appointments?from=YYYY-MM-DD&to=YYYY-MM-DD` | 📊 Get appointments by date range |
+| `POST` | `/appointments/book` | 📋 Book appointment (Saga flow) |
+| `POST` | `/appointments/ai-add/{patientId}` | 🤖 Create from AI-parsed text |
 
-```bash
-# Open Postman and import:
-File → Import → patient-management.postman_collection.json
-```
+### 👨‍⚕️ Doctor Service
 
-### Example API Calls
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/doctors/search?name={name}` | 🔍 Search doctor by name |
+| `GET` | `/doctors/{id}` | 📋 Get doctor details |
+| `GET` | `/doctors/{id}/minimal` | ⚡ Get minimal doctor info |
+| `GET` | `/doctors/{id}/exists` | ✅ Check doctor existence |
 
-**Authentication:**
-```bash
-# Sign Up
-curl -X POST http://localhost:9000/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{"email":"newuser@test.com","password":"password123"}'
-
-# Login
-curl -X POST http://localhost:9000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"testuser@test.com","password":"password123"}'
-
-# Response: JWT Token
-{
-  "token": "eyJhbGc..."
-}
-```
-
-**Patient Operations:**
-```bash
-# Get all patients
-curl -X GET http://localhost:9000/api/patients \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# Create patient
-curl -X POST http://localhost:9000/api/patients \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"name":"John Doe","email":"john@example.com","address":"123 Main St","dateOfBirth":"1990-01-01","registeredDate":"2026-05-10"}'
-
-# Update patient
-curl -X PUT http://localhost:9000/api/patients/123e4567-e89b-12d3-a456-426614174000 \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"name":"Jane Doe","email":"jane@example.com","address":"456 Oak Ave","dateOfBirth":"1990-01-01"}'
-
-# Delete patient
-curl -X DELETE http://localhost:9000/api/patients/123e4567-e89b-12d3-a456-426614174000 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-**Appointment Operations:**
-```bash
-# Get appointments by date range
-curl -X GET "http://localhost:9000/api/appointments?from=2026-05-01T00:00:00&to=2026-05-31T23:59:59" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# Create appointment via AI (natural language)
-curl -X POST http://localhost:9000/api/appointments/ai-add/123e4567-e89b-12d3-a456-426614174000 \
-  -H "Content-Type: text/plain" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d "I have an appointment with Dr. Smith on 2026-05-15 at 14:00 for a routine checkup"
-
-# Book appointment via saga flow
-curl -X POST http://localhost:9000/api/appointments/book \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{"requestId":"123e4567-e89b-12d3-a456-426614174100","patientId":"123e4567-e89b-12d3-a456-426614174000","doctorId":"123e4567-e89b-12d3-a456-426614174001","appointment_date":"2026-05-20","startTime":"10:00:00","endTime":"10:30:00","reason":"Follow-up","paymentMethod":"UPI","version":0}'
-```
-
-**Doctor Operations:**
-```bash
-# Search doctors by name
-curl -X GET "http://localhost:9000/api/doctors/search?name=Smith" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# Get full doctor details by ID
-curl -X GET http://localhost:9000/api/doctors/123e4567-e89b-12d3-a456-426614174001 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# Get minimal doctor information
-curl -X GET http://localhost:9000/api/doctors/123e4567-e89b-12d3-a456-426614174001/minimal \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-
-# Check if doctor exists
-curl -X GET http://localhost:9000/api/doctors/123e4567-e89b-12d3-a456-426614174001/exists \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
+> 📮 **Postman Collection**: Import [patient-management.postman_collection.json](patient-management.postman_collection.json)
 
 ---
 
-## 📊 Monitoring
+## 📁 Repository Structure
 
-### Actuator Endpoints (Patient Service — primary metrics source)
+```
+📦 Patient Management System
+├── 🌐 api-gateway/
+├── 🔐 auth-service/
+├── 👥 patient-service/
+├── 📅 appointment-service/
+├── 👨‍⚕️ doctor-service/
+├── 🤖 ai-service/
+├── 💳 payment-service/
+├── 📦 billing-service/
+├── 📊 analytics-service/
+├── 📈 monitoring/
+│   └── prometheus.yml
+├── 📮 patient-management.postman_collection.json
+├── 📋 PortsAndUrl.md
+├── 📋 README_OLD.md
+└── 📋 Readme.md
+```
 
-| Endpoint | URL |
-|----------|-----|
-| Prometheus metrics | `http://localhost:4000/actuator/prometheus` |
-| Health check | `http://localhost:4000/actuator/health` |
-| Info | `http://localhost:4000/actuator/info` |
-
-### Prometheus & Grafana
-
-- **Prometheus UI:** `http://localhost:9090` — query scraped metrics
-- **Grafana Dashboard:** `http://localhost:3000` — visualization and alerting (default login: `admin / admin`)
-- Prometheus is configured to scrape Patient Service's `/actuator/prometheus` endpoint
-- Grafana connects to Prometheus as a data source
-
-### Other Service Health Checks
-
-- **Auth Service Health:** `http://localhost:4005/actuator/health`
-- **Appointment Service Health:** `http://localhost:4006/actuator/health`
-
-### Prometheus Configuration
-
-The `monitoring/prometheus.yml` file contains Prometheus scrape configurations for all services.
+Each service is an **independent Maven project** with:
+- ✅ Dedicated `pom.xml`
+- ✅ Maven wrapper scripts
+- ✅ Source tree (`src/main` & `src/test`)
+- ✅ Resource configuration
+- ✅ Protobuf definitions (where applicable)
+- ✅ Dockerfile for containerization
 
 ---
 
-## 🧪 Testing
+## ⚙️ Configuration Guide
 
-### Run Unit Tests
+Most services support **environment variable overrides**:
 
-```bash
-# Run tests for all modules
-mvn test
+```properties
+# Database Configuration
+SPRING_DATASOURCE_URL=jdbc:postgresql://<host>:5432/db
+SPRING_DATASOURCE_USERNAME=admin_user
+SPRING_DATASOURCE_PASSWORD=password
 
-# Run tests for specific module
-cd patient-service
-mvn test
+# Database Schema Management
+SPRING_JPA_HIBERNATE_DDL_AUTO=update
+SPRING_SQL_INIT_MODE=always
 
-# Run tests with coverage
-mvn test jacoco:report
+# Messaging
+SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+# Security
+JWT_SECRET=<your-jwt-secret>
+
+# AI Integration
+GEMINI_API_KEY=<your-gemini-key>
+
+# Cache
+REDIS_HOST=redis
+REDIS_PORT=6379
 ```
 
-### Integration Tests
+### 🔌 gRPC Client Settings
 
-```bash
-# Run integration tests
-mvn verify
+```properties
+DOCTOR_SERVICE_ADDRESS=localhost
+DOCTOR_SERVICE_GRPC_PORT=9003
 
-# Skip unit tests and run only integration tests
-mvn verify -DskipUnitTests
+PAYMENT_SERVICE_ADDRESS=localhost
+PAYMENT_SERVICE_GRPC_PORT=9004
+
+AI_SERVICE_ADDRESS=localhost
+AI_SERVICE_GRPC_PORT=9002
 ```
+
+> ⚠️ **Security Note**: Keep `JWT_SECRET` and `GEMINI_API_KEY` in environment variables or a secret manager!
 
 ---
 
-## 📦 Build & Deployment
+## 📊 Observability & Monitoring
 
-### Building Docker Images
+### 🏥 Health Endpoints
 
-```bash
-# Build all services
-docker-compose build
-
-# Build specific service
-docker build -t patient-service:latest ./patient-service
-
-# View images
-docker images | grep patient
+```
+http://localhost:4000/actuator/health          # Patient Service
+http://localhost:4006/actuator/health          # Appointment Service
 ```
 
-### Pushing to Registry
+### 📈 Prometheus Metrics
 
-```bash
-# Tag images
-docker tag patient-service:latest your-registry/patient-service:latest
-
-# Push to registry
-docker push your-registry/patient-service:latest
+```
+http://localhost:4000/actuator/prometheus      # Patient Service metrics
+http://localhost:4006/actuator/prometheus      # Appointment Service metrics
 ```
 
-### Kubernetes Deployment (Optional)
-
-Create `k8s-deployment.yaml` files for each service to deploy on Kubernetes.
+**Configuration**: [monitoring/prometheus.yml](monitoring/prometheus.yml)
 
 ---
 
-## 🐛 Troubleshooting
+## 📝 Project Notes
 
-### Common Issues
-
-**Issue: Connection refused to Kafka**
-```bash
-# Solution: Ensure Kafka and Zookeeper are running
-docker-compose ps | grep kafka
-docker-compose logs kafka
-```
-
-**Issue: Database connection errors**
-```bash
-# Solution: Check database configuration
-docker-compose logs postgres
-# Verify connection string in application.properties
-```
-
-**Issue: Port already in use**
-```bash
-# Solution: Kill process using the port
-lsof -i :9000  # Check port 9000
-kill -9 <PID>  # Kill process
-
-# Or change port in configuration
-```
-
-**Issue: JWT token validation fails**
-```bash
-# Solution: Ensure JWT secret matches across services
-# Check application.properties for jwt.secret configuration
-```
-
-### Logs
-
-```bash
-# View all logs
-docker-compose logs -f
-
-# View specific service logs
-docker-compose logs -f patient-service
-docker-compose logs -f api-gateway
-
-# View recent logs
-docker-compose logs --tail=50 patient-service
-```
+- ✅ **Service-based architecture**: Independent Maven projects (not multi-module)
+- ✅ **Containerization**: Dockerfiles in each service directory
+- ✅ **Protocol Buffers**: Service-level `src/main/proto` directories
+- ✅ **Payment Service**: Mock implementation for Saga workflow testing
+- ✅ **Billing Service**: gRPC integration point for billing accounts
+- ✅ **Analytics Service**: Event consumer ready for reporting extensions
+- ✅ **API Gateway Security**: JWT validation + role-based authorization via Spring Security
+- ℹ️ **Note**: Root `docker-compose.yml` not included; configure as needed
 
 ---
 
-## 🤝 Contributing
+<div align="center">
 
-We welcome contributions! Here's how you can help:
+### 🎓 Built to Demonstrate
 
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit your changes** (`git commit -m 'Add amazing feature'`)
-4. **Push to the branch** (`git push origin feature/amazing-feature`)
-5. **Open a Pull Request**
+✨ Microservices Architecture | 🔄 Event-Driven Design | 🎭 Saga Orchestration | 🚀 Cloud-Ready Platform
 
-### Development Guidelines
-
-- Follow Java/Spring Boot best practices
-- Write unit tests for new features
-- Update documentation as needed
-- Use meaningful commit messages
-- Ensure code passes all tests before pushing
-
-### Code Style
-
-- Use consistent indentation (4 spaces)
-- Follow naming conventions (camelCase for variables, PascalCase for classes)
-- Add comments for complex logic
-- Keep methods small and focused
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-## 📞 Support & Contact
-
-For questions, issues, or suggestions:
-
-- **Issues:** [GitHub Issues](./issues)
-- **Email:** support@patientmanagement.dev
-- **Documentation:** [Wiki](./wiki)
-
----
-
-## 🙏 Acknowledgments
-
-- Spring Boot community for excellent framework
-- Apache Kafka for event streaming
-- gRPC for efficient RPC communication
-- Prometheus for monitoring capabilities
-
----
-
-## 📝 Changelog
-
-### v0.0.1 (Current)
-- Initial project setup
-- Core services implementation
-  - Auth Service (login, JWT validation)
-  - Patient Service (CRUD operations with caching)
-  - Appointment Service (scheduling with AI integration)
-  - **Doctor Service (NEW)** — Doctor management and search
-  - Analytics Service (event streaming analytics)
-  - Billing Service (bill generation via gRPC)
-  - AI Service (Gemini-powered query assistance)
-- **Auth API Enhancements (NEW)** — SignUp endpoint for user registration
-- **Doctor API Endpoints (NEW)**:
-  - Search doctor by name (full-text search)
-  - Get doctor details by ID
-  - Get minimal doctor information
-  - Check doctor existence validation
-- Kafka integration for event streaming
-- gRPC inter-service communication with comprehensive exception handling
-- JWT authentication and authorization
-- Docker containerization and Docker Compose orchestration
-- API documentation with Swagger/OpenAPI
-- Postman collection with comprehensive API test cases
-- Prometheus metrics and Grafana dashboards
-- **Enhancements v0.0.2 (May 13, 2026)**:
-  - ✅ **gRPC Exception Handling** — Added StatusRuntimeException handling to AiServiceGrpcClient, DoctorServiceGrpcClient, PaymentServiceGrpcClient
-  - ✅ **Enhanced Logging** — Added operational logs at key stages: request received, gRPC call start/end, DB save/update, payment success/failure, saga step transitions, exception handling
-  - ✅ **PortsAndUrl.md Documentation** — Comprehensive reference for all service ports, gRPC endpoints, database URLs, Docker internal hosts, and monitoring URLs
-  - ✅ **Improved Error Messages** — Better downstream service unavailability detection and reporting
-  - ✅ **Code Quality** — Production-oriented exception handling and detailed operational logging throughout the codebase
-
----
-
-**Last Updated:** May 13, 2026  
-**Status:** 🟢 Active Development  
-**Version:** 0.0.1-SNAPSHOT
+</div>

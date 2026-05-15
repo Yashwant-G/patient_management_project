@@ -12,6 +12,7 @@ buildNumber.properties
 
 # IDE - JetBrains
 .idea/
+.run/
 *.iml
 *.iws
 *.ipr
