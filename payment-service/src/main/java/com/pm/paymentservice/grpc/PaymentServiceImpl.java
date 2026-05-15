@@ -30,7 +30,7 @@ public class PaymentServiceImpl extends PaymentServiceGrpc.PaymentServiceImplBas
             // Placeholder for payment processing logic
             String txnId = "TXN_" + request.getAppointmentId() + "_" + System.currentTimeMillis();
             String status = "SUCCESS"; // Initially set to FAILURE for demo
-            String message = "Network Down due to high traffic";
+            String message = "Card declined due to Fraud Activity detected";
 
             log.info("Processing payment - amount={}, method={}, generating txnId={}", amount, paymentMethod, txnId);
 
