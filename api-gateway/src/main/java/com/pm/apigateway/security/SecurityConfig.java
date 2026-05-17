@@ -25,6 +25,12 @@ import io.jsonwebtoken.security.Keys;
 @EnableWebFluxSecurity //WebFlux vs Web, webflux is for reactive, non-blocking
 public class SecurityConfig {
 
+    private final CustomExceptionHandler exceptionHandler;
+
+    public SecurityConfig(CustomExceptionHandler exceptionHandler) {
+        this.exceptionHandler = exceptionHandler;
+    }
+
     @Bean
     public ReactiveJwtDecoder reactiveJwtDecoder(@Value("${jwt.secret}") String base64Secret) {
         byte[] keyBytes = Base64.getDecoder().decode(base64Secret.getBytes(StandardCharsets.UTF_8));
@@ -54,6 +60,8 @@ public class SecurityConfig {
 
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .authorizeExchange(ex -> ex
                         .pathMatchers(HttpMethod.GET, "/api-docs/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
@@ -78,7 +86,11 @@ public class SecurityConfig {
                         // everything else requires authentication
                         .anyExchange().authenticated()
                 )
+                .exceptionHandling(exception -> exception
+                        .accessDeniedHandler(exceptionHandler))
                 .oauth2ResourceServer(oauth2 -> oauth2
+                        .authenticationEntryPoint(exceptionHandler)
+                        .accessDeniedHandler(exceptionHandler)
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(
                                 new ReactiveJwtAuthenticationConverterAdapter(jwtAuthenticationConverter)
                         ))
